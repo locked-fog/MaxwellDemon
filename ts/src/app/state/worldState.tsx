@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { PropsWithChildren } from 'react'
 import { createContext, useContext, useMemo, useReducer } from 'react'
-import type { BlockState, WorldState } from '../../types'
+import type { BlockState, GraphState, WorldState } from '../../types'
 import {
   createInitialSession,
   getSelectedBlock,
@@ -20,6 +20,7 @@ interface WorldSessionContextValue {
   selectedBlock?: BlockState
   selectBlock: (blockId: string) => void
   unlockBlock: (blockId: string) => void
+  setSelectedBlockGraph: (graph: GraphState) => void
   canUnlock: (blockId: string) => boolean
   listNeighbors: (blockId: string) => BlockState[]
 }
@@ -43,6 +44,8 @@ export function WorldSessionProvider({
       selectedBlock,
       selectBlock: (blockId: string) => dispatch({ type: 'select_block', blockId }),
       unlockBlock: (blockId: string) => dispatch({ type: 'unlock_block', blockId }),
+      setSelectedBlockGraph: (graph: GraphState) =>
+        dispatch({ type: 'set_selected_block_graph', graph }),
       canUnlock: (blockId: string) => isBlockUnlockable(session.world, blockId),
       listNeighbors: (blockId: string) => listNeighborBlocks(session.world, blockId),
     }
