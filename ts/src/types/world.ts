@@ -2,7 +2,7 @@ import type { GraphState } from './graph'
 import type { EraId, Id, ResourceId, ResourceInventory } from './common'
 import type { TradeState } from './trade'
 
-export type TerrainId = 'plains' | 'forest' | 'mountain' | 'river' | 'coast'
+export type TerrainId = 'plains' | 'forest' | 'mountain' | 'water' | 'coast'
 
 export interface BlockCoord {
   q: number

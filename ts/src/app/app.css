@@ -16,6 +16,16 @@
   color: #9fb2c9;
 }
 
+.new-world-btn {
+  margin-top: 10px;
+  border: 1px solid #334b67;
+  background: #122131;
+  color: #cad7e5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
 .app-nav {
   display: flex;
   flex-wrap: wrap;
@@ -42,4 +52,74 @@
 .app-main {
   display: grid;
   gap: 12px;
+}
+
+.setup-shell {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.setup-card {
+  width: min(460px, 100%);
+  border: 1px solid #2a415a;
+  border-radius: 14px;
+  background: #0f1a29;
+  padding: 20px;
+}
+
+.setup-card h1 {
+  margin: 0;
+}
+
+.setup-card p {
+  margin: 8px 0 0;
+  color: #9fb2c9;
+}
+
+.setup-label {
+  margin-top: 14px;
+  display: block;
+  font-weight: 600;
+}
+
+.setup-input {
+  margin-top: 8px;
+  width: 100%;
+  border: 1px solid #2f4b68;
+  border-radius: 8px;
+  background: #0b1320;
+  color: #ecf2ff;
+  padding: 10px;
+}
+
+.setup-hint {
+  font-size: 0.88rem;
+}
+
+.setup-error {
+  color: #ffb4b4;
+  font-size: 0.9rem;
+}
+
+.setup-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+}
+
+.setup-btn {
+  border: 1px solid #314d69;
+  border-radius: 8px;
+  background: #132436;
+  color: #d5e2ef;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.setup-btn.primary {
+  border-color: #57d2a0;
+  background: #57d2a0;
+  color: #102033;
+  font-weight: 700;
 }
