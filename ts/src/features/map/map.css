@@ -1,0 +1,142 @@
+.map-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
+}
+
+.map-svg-wrap {
+  border: 1px solid #27435e;
+  border-radius: 12px;
+  background: #0b1320;
+  min-height: 520px;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.map-svg {
+  display: block;
+}
+
+.map-tools {
+  border-bottom: 1px solid #1f3348;
+  background: #0e1928;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map-tool-btn {
+  border: 1px solid #334b67;
+  border-radius: 8px;
+  background: #122131;
+  color: #cad7e5;
+  padding: 5px 8px;
+  min-width: 40px;
+  cursor: pointer;
+}
+
+.map-zoom-slider {
+  width: 140px;
+}
+
+.map-zoom-text {
+  color: #dce7f4;
+  min-width: 48px;
+}
+
+.map-count-text {
+  color: #9fb2c9;
+}
+
+.map-scroll {
+  overflow: auto;
+  min-height: 420px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.map-scroll.dragging {
+  cursor: grabbing;
+}
+
+.map-fill {
+  cursor: inherit;
+}
+
+.map-fill:hover {
+  filter: brightness(1.06);
+}
+
+.map-border-base {
+  fill: none;
+  pointer-events: none;
+  stroke: #1f2e40;
+  stroke-width: 1.8;
+}
+
+.map-border-unlockable {
+  fill: none;
+  pointer-events: none;
+  stroke: #57d2a0;
+  stroke-width: 2.4;
+  stroke-dasharray: 6 4;
+}
+
+.map-border-selected {
+  fill: none;
+  pointer-events: none;
+  stroke: #f8c55f;
+  stroke-width: 3;
+}
+
+.map-label {
+  font-size: 11px;
+  fill: #edf4ff;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.map-side {
+  border: 1px solid #22364c;
+  border-radius: 12px;
+  background: #111e2e;
+  padding: 12px;
+}
+
+.map-side-title {
+  margin: 0 0 10px;
+}
+
+.map-meta {
+  margin: 4px 0;
+  color: #cad7e5;
+}
+
+.map-action-btn {
+  margin-top: 10px;
+  border: 1px solid #57d2a0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #57d2a0;
+  color: #0d1b2b;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-hint {
+  margin-top: 10px;
+  color: #9fb2c9;
+}
+
+@media (max-width: 960px) {
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .map-tools {
+    flex-wrap: wrap;
+  }
+}
