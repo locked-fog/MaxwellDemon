@@ -1,0 +1,74 @@
+[
+  {
+    "id": "extractor",
+    "name": "采集器",
+    "desc": "从区块禀赋采集资源",
+    "ports": { "inputs": [], "outputs": ["out"] },
+    "allowedRecipes": [],
+    "tags": ["production"]
+  },
+  {
+    "id": "processor",
+    "name": "加工器",
+    "desc": "根据配方加工资源",
+    "ports": { "inputs": ["in"], "outputs": ["out"] },
+    "allowedRecipes": ["smelt_ingot"],
+    "tags": ["production"]
+  },
+  {
+    "id": "storage",
+    "name": "仓储",
+    "desc": "缓存物资",
+    "ports": { "inputs": ["in"], "outputs": ["out"] },
+    "allowedRecipes": [],
+    "tags": ["logistics"]
+  },
+  {
+    "id": "power_gen",
+    "name": "发电机",
+    "desc": "提供电力预算",
+    "ports": { "inputs": [], "outputs": [] },
+    "allowedRecipes": [],
+    "tags": ["power"]
+  },
+  {
+    "id": "control",
+    "name": "控制器",
+    "desc": "规则调度节点",
+    "ports": { "inputs": ["in"], "outputs": ["out"] },
+    "allowedRecipes": [],
+    "tags": ["control"]
+  },
+  {
+    "id": "port_in",
+    "name": "输入端口",
+    "desc": "图内输出写入区块库存",
+    "ports": { "inputs": ["in"], "outputs": [] },
+    "allowedRecipes": [],
+    "tags": ["logistics"]
+  },
+  {
+    "id": "port_out",
+    "name": "输出端口",
+    "desc": "区块库存写入图内",
+    "ports": { "inputs": [], "outputs": ["out"] },
+    "allowedRecipes": [],
+    "tags": ["logistics"]
+  },
+  {
+    "id": "market",
+    "name": "市场节点",
+    "desc": "本地市场交易代理",
+    "ports": { "inputs": ["in"], "outputs": ["out"] },
+    "allowedRecipes": [],
+    "tags": ["trade"]
+  },
+  {
+    "id": "research",
+    "name": "研究节点",
+    "desc": "产出科研点",
+    "ports": { "inputs": ["in"], "outputs": ["out"] },
+    "allowedRecipes": [],
+    "tags": ["progress"]
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "tech_smelting",
+    "name": "基础冶炼",
+    "desc": "解锁基础加工链路",
+    "era": "T0",
+    "prereq": [],
+    "cost": { "science": 10 },
+    "unlocks": [{ "kind": "recipe", "id": "smelt_ingot" }]
+  },
+  {
+    "id": "tech_power_grid",
+    "name": "电网稳定",
+    "desc": "提升电力效率",
+    "era": "T1",
+    "prereq": ["tech_smelting"],
+    "cost": { "science": 20 },
+    "unlocks": [{ "kind": "node_type", "id": "power_gen" }]
+  },
+  {
+    "id": "tech_space_trade",
+    "name": "轨道贸易",
+    "desc": "解锁商人系统",
+    "era": "T2",
+    "prereq": ["tech_power_grid"],
+    "cost": { "science": 40 },
+    "unlocks": [{ "kind": "feature", "id": "merchant" }]
+  },
+  {
+    "id": "tech_anchor",
+    "name": "稳定锚理论",
+    "desc": "解锁终局材料路径",
+    "era": "T3",
+    "prereq": ["tech_space_trade"],
+    "cost": { "science": 80 },
+    "unlocks": [{ "kind": "recipe", "id": "forge_alloy" }]
+  },
+  {
+    "id": "tech_seed_protocol",
+    "name": "播种协议",
+    "desc": "解锁转生装置",
+    "era": "T4",
+    "prereq": ["tech_anchor"],
+    "cost": { "science": 120 },
+    "unlocks": [{ "kind": "feature", "id": "rebirth" }]
+  }
+]

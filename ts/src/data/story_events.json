@@ -1,0 +1,18 @@
+[
+  {
+    "id": "story_t0_anomaly",
+    "title": "第一次异常波动",
+    "text": "宏观熵出现不可解释跃迁。",
+    "era": "T0",
+    "triggers": [{ "kind": "day_reached", "day": 3 }],
+    "actions": [{ "kind": "set_flag", "flag": "anomaly_seen", "value": true }]
+  },
+  {
+    "id": "story_t4_gateway",
+    "title": "终局门槛",
+    "text": "你已接近文明命运分叉点。",
+    "era": "T4",
+    "triggers": [{ "kind": "era_reached", "era": "T4" }],
+    "actions": [{ "kind": "add_memory_shards", "qty": 5 }]
+  }
+]

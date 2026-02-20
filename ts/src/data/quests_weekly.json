@@ -1,0 +1,16 @@
+[
+  {
+    "id": "weekly_anchor_material",
+    "name": "周供给：稳定锚材料",
+    "desc": "交付 8 稳定锚材料",
+    "kind": "weekly",
+    "tags": ["weekly", "story"]
+  },
+  {
+    "id": "weekly_seed_core",
+    "name": "周供给：播种核心",
+    "desc": "交付 2 播种核心",
+    "kind": "weekly",
+    "tags": ["weekly", "rebirth"]
+  }
+]

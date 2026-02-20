@@ -1,0 +1,14 @@
+[
+  {
+    "id": "trader_helix",
+    "name": "Helix 号商团",
+    "desc": "偏好芯片与高阶材料",
+    "tags": ["t2", "high-tech"]
+  },
+  {
+    "id": "trader_old_orbit",
+    "name": "旧轨道行会",
+    "desc": "提供基础资源兜底交易",
+    "tags": ["stable", "bulk"]
+  }
+]

@@ -1,0 +1,12 @@
+[
+  { "id": "ore", "name": "矿石", "desc": "基础矿物原料", "tags": ["raw"] },
+  { "id": "ingot", "name": "金属锭", "desc": "冶炼后的基础材料", "tags": ["mid"] },
+  { "id": "wood", "name": "木材", "desc": "基础有机材料", "tags": ["raw"] },
+  { "id": "water", "name": "水", "desc": "基础流体资源", "tags": ["fluid"] },
+  { "id": "power_cell", "name": "电能单元", "desc": "中阶电力储备", "tags": ["energy"] },
+  { "id": "science", "name": "科研点", "desc": "科技解锁资源", "tags": ["progress"] },
+  { "id": "alloy", "name": "合金", "desc": "高阶制造材料", "tags": ["mid"] },
+  { "id": "chip", "name": "芯片", "desc": "算力基础件", "tags": ["advanced"] },
+  { "id": "anchor_matter", "name": "稳定锚材料", "desc": "T3 关键物资", "tags": ["story"] },
+  { "id": "seed_core", "name": "播种核心", "desc": "转生装置核心材料", "tags": ["meta"] }
+]

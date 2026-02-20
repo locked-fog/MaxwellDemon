@@ -1,0 +1,35 @@
+[
+  {
+    "id": "smelt_ingot",
+    "name": "冶炼金属锭",
+    "desc": "矿石转化为金属锭",
+    "inputs": [{ "id": "ore", "qty": 2 }],
+    "outputs": [{ "id": "ingot", "qty": 1 }],
+    "timeDays": 0.1,
+    "powerPerDay": 10,
+    "tags": ["basic"]
+  },
+  {
+    "id": "forge_alloy",
+    "name": "合金锻造",
+    "desc": "金属锭加工为合金",
+    "inputs": [{ "id": "ingot", "qty": 2 }],
+    "outputs": [{ "id": "alloy", "qty": 1 }],
+    "timeDays": 0.2,
+    "powerPerDay": 16,
+    "tags": ["advanced"]
+  },
+  {
+    "id": "etch_chip",
+    "name": "芯片蚀刻",
+    "desc": "合金与电能制造芯片",
+    "inputs": [
+      { "id": "alloy", "qty": 1 },
+      { "id": "power_cell", "qty": 1 }
+    ],
+    "outputs": [{ "id": "chip", "qty": 1 }],
+    "timeDays": 0.3,
+    "powerPerDay": 20,
+    "tags": ["high-tech"]
+  }
+]

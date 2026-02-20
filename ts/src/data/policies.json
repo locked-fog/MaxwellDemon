@@ -1,0 +1,44 @@
+[
+  {
+    "id": "policy_industry_push",
+    "name": "工业冲刺",
+    "desc": "提高产能但增加熵",
+    "track": "Industry",
+    "prereq": [],
+    "effects": [
+      { "kind": "modifier", "target": "throughput", "operator": "mul", "value": 1.1 },
+      { "kind": "modifier", "target": "entropy_gain", "operator": "mul", "value": 1.08 }
+    ]
+  },
+  {
+    "id": "policy_ecology_balance",
+    "name": "生态平衡",
+    "desc": "降低熵增但减少产能",
+    "track": "Ecology",
+    "prereq": [],
+    "effects": [
+      { "kind": "modifier", "target": "entropy_gain", "operator": "mul", "value": 0.9 },
+      { "kind": "modifier", "target": "throughput", "operator": "mul", "value": 0.95 }
+    ]
+  },
+  {
+    "id": "policy_faith_order",
+    "name": "信条秩序",
+    "desc": "降低崩坏压力增长",
+    "track": "Faith",
+    "prereq": [],
+    "effects": [
+      { "kind": "modifier", "target": "collapse_pressure", "operator": "mul", "value": 0.92 }
+    ]
+  },
+  {
+    "id": "policy_trade_liberal",
+    "name": "自由贸易",
+    "desc": "改善市场价格",
+    "track": "Trade",
+    "prereq": [],
+    "effects": [
+      { "kind": "modifier", "target": "market_price", "operator": "mul", "value": 0.95 }
+    ]
+  }
+]

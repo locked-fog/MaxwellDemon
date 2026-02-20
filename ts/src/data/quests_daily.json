@@ -1,0 +1,16 @@
+[
+  {
+    "id": "daily_ingot_supply",
+    "name": "日供给：金属锭",
+    "desc": "交付 10 金属锭",
+    "kind": "daily",
+    "tags": ["delivery", "starter"]
+  },
+  {
+    "id": "daily_chip_probe",
+    "name": "日供给：测试芯片",
+    "desc": "交付 3 芯片",
+    "kind": "daily",
+    "tags": ["delivery", "advanced"]
+  }
+]
