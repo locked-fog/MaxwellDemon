@@ -68,4 +68,31 @@ describe('worldLogic', () => {
     expect(terrainSet.has('coast')).toBe(true)
     expect(terrainSet.has('mountain')).toBe(true)
   })
+
+  it('updates selected block graph via reducer action', () => {
+    const session = createInitialSession({
+      nowUnixMs: 1700000000000,
+      mapCellCount: 300,
+      noiseSeed: 2026,
+    })
+    const graph = {
+      nodes: [
+        {
+          id: 'n_a',
+          type: 'extractor' as const,
+          x: 10,
+          y: 20,
+          params: { resourceId: 'ore' },
+          enabled: true,
+        },
+      ],
+      edges: [],
+    }
+
+    const next = reduceWorldSession(session, { type: 'set_selected_block_graph', graph })
+    const selected = next.world.blocks.find((block) => block.id === next.selectedBlockId)
+
+    expect(selected?.graph.nodes).toHaveLength(1)
+    expect(selected?.graph.nodes[0].id).toBe('n_a')
+  })
 })

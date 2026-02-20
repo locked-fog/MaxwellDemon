@@ -1,0 +1,298 @@
+.graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 12px;
+}
+
+.graph-canvas-card {
+  border: 1px solid #2a4058;
+  border-radius: 12px;
+  background: #0f1a29;
+  overflow: hidden;
+}
+
+.graph-toolbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid #1f3348;
+  background: #0e1827;
+}
+
+.graph-toolbar button {
+  border: 1px solid #314a66;
+  border-radius: 8px;
+  background: #122131;
+  color: #d8e4f2;
+  padding: 6px 9px;
+}
+
+.graph-toolbox-title {
+  color: #c9d8e8;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.graph-toolbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.toolbox-item {
+  border: 1px solid #3f5975;
+  border-radius: 999px;
+  background: #142539;
+  color: #dbe6f4;
+  padding: 6px 10px;
+  font-size: 0.86rem;
+  cursor: grab;
+  white-space: nowrap;
+}
+
+.toolbox-item.active {
+  border-color: #56d1a0;
+  background: #56d1a0;
+  color: #112036;
+  font-weight: 700;
+}
+
+.toolbox-item:active {
+  cursor: grabbing;
+}
+
+.graph-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.graph-stats {
+  margin-left: auto;
+  color: #9bb1c8;
+  font-size: 0.9rem;
+}
+
+.graph-canvas {
+  height: 520px;
+  background: #0d1724;
+}
+
+.graph-canvas .react-flow__pane {
+  background: #0d1724;
+}
+
+.graph-canvas .react-flow__nodes {
+  z-index: 8;
+}
+
+.graph-canvas .react-flow__node {
+  z-index: 9;
+}
+
+.graph-canvas .react-flow__edges {
+  z-index: 7;
+}
+
+.graph-canvas .react-flow__edge-path {
+  stroke: #78b7e5;
+  stroke-width: 2px;
+}
+
+.graph-canvas .react-flow__edge.selected .react-flow__edge-path {
+  stroke: #f7c45e;
+  stroke-width: 2.4px;
+}
+
+.graph-canvas .react-flow__edge-textbg {
+  fill: #112238;
+}
+
+.graph-canvas .react-flow__edge-text {
+  fill: #dce9f6;
+}
+
+.graph-canvas .react-flow__minimap {
+  background: #0f1a29;
+  border: 1px solid #29405a;
+}
+
+.graph-canvas .react-flow__minimap-mask {
+  fill: rgba(11, 19, 31, 0.5);
+  stroke: #88a9c9;
+  stroke-width: 1.2px;
+}
+
+.graph-canvas .react-flow__minimap-node {
+  stroke-width: 1.1px;
+}
+
+.graph-canvas .react-flow__controls {
+  box-shadow: none;
+  border: 1px solid #2b4460;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.graph-canvas .react-flow__controls-button {
+  background: #122131;
+  border-bottom: 1px solid #2b4460;
+  color: #d9e6f5;
+}
+
+.graph-canvas .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.graph-canvas .react-flow__attribution {
+  display: none;
+}
+
+.graph-canvas .react-flow__node.selected {
+  box-shadow: 0 0 0 2px #f8c35c;
+}
+
+.flow-node-card {
+  min-width: 136px;
+  border: 1px solid #3f5b77;
+  border-radius: 11px;
+  background: #15263a;
+  color: #e7f1ff;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.32);
+  padding: 8px 10px;
+}
+
+.flow-node-card.selected {
+  border-color: #f8c35c;
+}
+
+.flow-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.flow-node-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  margin: 0;
+}
+
+.flow-node-subtitle {
+  font-size: 0.72rem;
+  color: #9eb5cb;
+  margin-top: 4px;
+}
+
+.flow-node-status {
+  border: 1px solid #425f7b;
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 0.66rem;
+  line-height: 1.2;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.flow-node-status.running {
+  border-color: #56d1a0;
+  color: #56d1a0;
+}
+
+.flow-node-status.stalled {
+  border-color: #f0a96b;
+  color: #f0a96b;
+}
+
+.flow-node-status.idle {
+  border-color: #6d83a0;
+  color: #b5c8dc;
+}
+
+.flow-node-handle {
+  width: 8px;
+  height: 8px;
+  border: 1px solid #c9d9eb;
+  background: #74b5ea;
+}
+
+.flow-node-handle.target {
+  background: #5c9fd2;
+}
+
+.flow-node-handle.source {
+  background: #8ec3ee;
+}
+
+.graph-side-card {
+  border: 1px solid #22364c;
+  border-radius: 12px;
+  background: #111e2e;
+  padding: 12px;
+}
+
+.graph-side-card h3 {
+  margin-top: 0;
+}
+
+.graph-side-card p {
+  margin: 6px 0;
+  color: #d7e3f0;
+  overflow-wrap: anywhere;
+}
+
+.graph-selection-group {
+  border: 1px solid #20344a;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 8px;
+  background: #0f1a28;
+}
+
+.graph-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.graph-field span {
+  font-size: 0.8rem;
+  color: #a8bfd6;
+}
+
+.graph-input {
+  width: 100%;
+  border: 1px solid #2f4b68;
+  border-radius: 8px;
+  background: #0b1320;
+  color: #ecf2ff;
+  padding: 7px 8px;
+}
+
+.graph-toggle-field {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d9e6f3;
+}
+
+.graph-error {
+  margin-top: 10px;
+  color: #ffb9b9;
+}
+
+@media (max-width: 1080px) {
+  .graph-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .graph-toolbar {
+    grid-template-columns: 1fr;
+  }
+}

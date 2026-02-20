@@ -1,4 +1,4 @@
-import type { BlockCoord, BlockState, TerrainId, WorldState } from '../../types'
+import type { BlockCoord, BlockState, GraphState, TerrainId, WorldState } from '../../types'
 import { fbm2 } from '../../utils/noise'
 
 const HEX_NEIGHBOR_OFFSETS: ReadonlyArray<BlockCoord> = [
@@ -24,6 +24,7 @@ export interface CreateSessionOptions {
 export type WorldAction =
   | { type: 'select_block'; blockId: string }
   | { type: 'unlock_block'; blockId: string }
+  | { type: 'set_selected_block_graph'; graph: GraphState }
 
 const DEFAULT_MAP_CELL_COUNT = 300
 const MIN_MAP_CELL_COUNT = 91
@@ -88,6 +89,9 @@ export function reduceWorldSession(state: WorldSessionState, action: WorldAction
   }
   if (action.type === 'unlock_block') {
     return unlockBlock(state, action.blockId)
+  }
+  if (action.type === 'set_selected_block_graph') {
+    return setSelectedBlockGraph(state, action.graph)
   }
   return state
 }
@@ -189,6 +193,25 @@ function unlockBlock(state: WorldSessionState, blockId: string): WorldSessionSta
       blocks: nextBlocks,
     },
     selectedBlockId: blockId,
+  }
+}
+
+function setSelectedBlockGraph(state: WorldSessionState, graph: GraphState): WorldSessionState {
+  const target = getBlockById(state.world, state.selectedBlockId)
+  if (!target) {
+    return state
+  }
+
+  const nextBlocks = state.world.blocks.map((block) =>
+    block.id === state.selectedBlockId ? { ...block, graph } : block
+  )
+
+  return {
+    ...state,
+    world: {
+      ...state.world,
+      blocks: nextBlocks,
+    },
   }
 }
 
