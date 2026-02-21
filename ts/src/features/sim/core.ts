@@ -15,7 +15,11 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
   nextBlock.graph.edges = edges
   const unmetDemand: ResourceInventory = {}
 
-  const effectiveRateMultiplier = clamp01(1 - config.entropyFactor)
+  const throughputMultiplier = optionalPositive(config.throughputMultiplier, 1)
+  const powerEfficiencyMultiplier = optionalPositive(config.powerEfficiencyMultiplier, 1)
+  const entropyGainMultiplier = optionalPositive(config.entropyGainMultiplier, 1)
+  const effectiveEntropyFactor = clampPositive(config.entropyFactor * entropyGainMultiplier)
+  const effectiveRateMultiplier = clampPositive(clamp01(1 - effectiveEntropyFactor) * throughputMultiplier)
   const extractionBudget = createExtractionBudget(
     nextBlock.extractionRatePerTick,
     effectiveRateMultiplier
@@ -45,6 +49,7 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
         powerUsed,
         extractionBudget,
         effectiveRateMultiplier,
+        powerEfficiencyMultiplier,
       })
       continue
     }
@@ -58,6 +63,7 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
         powerProduced,
         powerUsed,
         effectiveRateMultiplier,
+        powerEfficiencyMultiplier,
       })
       continue
     }
@@ -129,15 +135,24 @@ interface ExtractorContext {
   powerUsed: number
   extractionBudget: ResourceInventory
   effectiveRateMultiplier: number
+  powerEfficiencyMultiplier: number
 }
 
 function runExtractor(ctx: ExtractorContext): number {
-  const { node, runtime, powerProduced, extractionBudget, effectiveRateMultiplier } = ctx
+  const {
+    node,
+    runtime,
+    powerProduced,
+    extractionBudget,
+    effectiveRateMultiplier,
+    powerEfficiencyMultiplier,
+  } = ctx
   let { powerUsed } = ctx
 
   const resourceId = readString(node.params.resourceId, '')
   const ratePerTick = positive(readNumber(node.params.ratePerTick, 0)) * effectiveRateMultiplier
-  const powerPerTick = positive(readNumber(node.params.powerPerTick, 0))
+  const powerPerTick =
+    positive(readNumber(node.params.powerPerTick, 0)) / optionalPositive(powerEfficiencyMultiplier, 1)
 
   if (resourceId.length === 0 || ratePerTick <= EPSILON) {
     runtime.lastStatus = stalled('no_input')
@@ -188,10 +203,19 @@ interface ProcessorContext {
   powerProduced: number
   powerUsed: number
   effectiveRateMultiplier: number
+  powerEfficiencyMultiplier: number
 }
 
 function runProcessor(ctx: ProcessorContext): number {
-  const { node, runtime, recipes, tickDays, powerProduced, effectiveRateMultiplier } = ctx
+  const {
+    node,
+    runtime,
+    recipes,
+    tickDays,
+    powerProduced,
+    effectiveRateMultiplier,
+    powerEfficiencyMultiplier,
+  } = ctx
   let { powerUsed } = ctx
 
   const recipeId = readString(node.params.recipeId, '')
@@ -214,7 +238,8 @@ function runProcessor(ctx: ProcessorContext): number {
   let blockedReason: NodeStatus | undefined
 
   while (runtime.workProgressDays + EPSILON >= cycleDays) {
-    const cyclePower = positive((recipe.powerPerDay ?? 0) * cycleDays)
+    const cyclePower =
+      positive((recipe.powerPerDay ?? 0) * cycleDays) / optionalPositive(powerEfficiencyMultiplier, 1)
     const scaledOutputs = scaleStacks(recipe.outputs, effectiveRateMultiplier)
 
     if (powerUsed + cyclePower > powerProduced + EPSILON) {
@@ -420,6 +445,13 @@ function createExtractionBudget(
     budget[resourceId] = positive(rate) * effectiveRateMultiplier
   }
   return budget
+}
+
+function optionalPositive(value: number | undefined, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= EPSILON) {
+    return fallback
+  }
+  return value
 }
 
 function hasStacks(inventory: ResourceInventory, stacks: Stack[]): boolean {

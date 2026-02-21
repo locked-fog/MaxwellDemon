@@ -1,47 +1,955 @@
 [
   {
     "id": "tech_smelting",
-    "name": "基础冶炼",
-    "desc": "解锁基础加工链路",
+    "name": "Basic Smelting",
+    "desc": "Unlocks the baseline smelting recipe.",
     "era": "T0",
     "prereq": [],
-    "cost": { "science": 10 },
-    "unlocks": [{ "kind": "recipe", "id": "smelt_ingot" }]
+    "cost": {
+      "science": 10
+    },
+    "unlocks": [
+      {
+        "kind": "recipe",
+        "id": "smelt_ingot"
+      }
+    ]
   },
   {
     "id": "tech_power_grid",
-    "name": "电网稳定",
-    "desc": "提升电力效率",
+    "name": "Stable Power Grid",
+    "desc": "Unlocks the power generator node.",
+    "era": "T0",
+    "prereq": [
+      "tech_smelting"
+    ],
+    "cost": {
+      "science": 12
+    },
+    "unlocks": [
+      {
+        "kind": "node_type",
+        "id": "power_gen"
+      }
+    ]
+  },
+  {
+    "id": "tech_process_automation",
+    "name": "Process Automation",
+    "desc": "Unlocks the processor node type.",
+    "era": "T0",
+    "prereq": [
+      "tech_smelting"
+    ],
+    "cost": {
+      "science": 12
+    },
+    "unlocks": [
+      {
+        "kind": "node_type",
+        "id": "processor"
+      }
+    ]
+  },
+  {
+    "id": "tech_basic_research",
+    "name": "Basic Research Methods",
+    "desc": "Unlocks the research node type.",
+    "era": "T0",
+    "prereq": [
+      "tech_process_automation"
+    ],
+    "cost": {
+      "science": 14
+    },
+    "unlocks": [
+      {
+        "kind": "node_type",
+        "id": "research"
+      }
+    ]
+  },
+  {
+    "id": "tech_control_theory",
+    "name": "Control Theory",
+    "desc": "Unlocks the control node.",
     "era": "T1",
-    "prereq": ["tech_smelting"],
-    "cost": { "science": 20 },
-    "unlocks": [{ "kind": "node_type", "id": "power_gen" }]
+    "prereq": [
+      "tech_power_grid"
+    ],
+    "cost": {
+      "science": 18
+    },
+    "unlocks": [
+      {
+        "kind": "node_type",
+        "id": "control"
+      }
+    ]
+  },
+  {
+    "id": "tech_market_protocol",
+    "name": "Market Protocol",
+    "desc": "Unlocks the market node type.",
+    "era": "T1",
+    "prereq": [
+      "tech_power_grid"
+    ],
+    "cost": {
+      "science": 18
+    },
+    "unlocks": [
+      {
+        "kind": "node_type",
+        "id": "market"
+      }
+    ]
+  },
+  {
+    "id": "tech_alloy_forging",
+    "name": "Alloy Forging",
+    "desc": "Unlocks the forge_alloy recipe.",
+    "era": "T1",
+    "prereq": [
+      "tech_process_automation"
+    ],
+    "cost": {
+      "science": 22
+    },
+    "unlocks": [
+      {
+        "kind": "recipe",
+        "id": "forge_alloy"
+      }
+    ]
+  },
+  {
+    "id": "tech_chip_lithography",
+    "name": "Chip Lithography",
+    "desc": "Unlocks the etch_chip recipe.",
+    "era": "T2",
+    "prereq": [
+      "tech_alloy_forging"
+    ],
+    "cost": {
+      "science": 28
+    },
+    "unlocks": [
+      {
+        "kind": "recipe",
+        "id": "etch_chip"
+      }
+    ]
+  },
+  {
+    "id": "tech_policy_chamber_i",
+    "name": "Policy Chamber I",
+    "desc": "Adds one policy slot.",
+    "era": "T1",
+    "prereq": [
+      "tech_basic_research"
+    ],
+    "cost": {
+      "science": 20
+    },
+    "unlocks": [
+      {
+        "kind": "policy_slot",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_policy_chamber_ii",
+    "name": "Policy Chamber II",
+    "desc": "Adds one more policy slot.",
+    "era": "T2",
+    "prereq": [
+      "tech_policy_chamber_i"
+    ],
+    "cost": {
+      "science": 35
+    },
+    "unlocks": [
+      {
+        "kind": "policy_slot",
+        "amount": 1
+      }
+    ]
   },
   {
     "id": "tech_space_trade",
-    "name": "轨道贸易",
-    "desc": "解锁商人系统",
+    "name": "Orbital Trade",
+    "desc": "Unlocks merchant interactions.",
     "era": "T2",
-    "prereq": ["tech_power_grid"],
-    "cost": { "science": 40 },
-    "unlocks": [{ "kind": "feature", "id": "merchant" }]
+    "prereq": [
+      "tech_market_protocol"
+    ],
+    "cost": {
+      "science": 40
+    },
+    "unlocks": [
+      {
+        "kind": "feature",
+        "id": "merchant"
+      }
+    ]
   },
   {
     "id": "tech_anchor",
-    "name": "稳定锚理论",
-    "desc": "解锁终局材料路径",
+    "name": "Anchor Theory",
+    "desc": "Unlocks contract-level capabilities.",
     "era": "T3",
-    "prereq": ["tech_space_trade"],
-    "cost": { "science": 80 },
-    "unlocks": [{ "kind": "recipe", "id": "forge_alloy" }]
+    "prereq": [
+      "tech_chip_lithography",
+      "tech_space_trade"
+    ],
+    "cost": {
+      "science": 60
+    },
+    "unlocks": [
+      {
+        "kind": "feature",
+        "id": "contract"
+      }
+    ]
   },
   {
     "id": "tech_seed_protocol",
-    "name": "播种协议",
-    "desc": "解锁转生装置",
+    "name": "Seed Protocol",
+    "desc": "Unlocks rebirth capability.",
     "era": "T4",
-    "prereq": ["tech_anchor"],
-    "cost": { "science": 120 },
-    "unlocks": [{ "kind": "feature", "id": "rebirth" }]
+    "prereq": [
+      "tech_anchor"
+    ],
+    "cost": {
+      "science": 90
+    },
+    "unlocks": [
+      {
+        "kind": "feature",
+        "id": "rebirth"
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_01",
+    "name": "T0 Expansion 01",
+    "desc": "T0 stage expansion node 01.",
+    "era": "T0",
+    "prereq": [
+      "tech_smelting"
+    ],
+    "cost": {
+      "science": 13
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_02",
+    "name": "T0 Expansion 02",
+    "desc": "T0 stage expansion node 02.",
+    "era": "T0",
+    "prereq": [
+      "tech_t0_01"
+    ],
+    "cost": {
+      "science": 16
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_03",
+    "name": "T0 Expansion 03",
+    "desc": "T0 stage expansion node 03.",
+    "era": "T0",
+    "prereq": [
+      "tech_t0_02"
+    ],
+    "cost": {
+      "science": 19
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_04",
+    "name": "T0 Expansion 04",
+    "desc": "T0 stage expansion node 04.",
+    "era": "T0",
+    "prereq": [
+      "tech_t0_03"
+    ],
+    "cost": {
+      "science": 22
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_05",
+    "name": "T0 Expansion 05",
+    "desc": "T0 stage expansion node 05.",
+    "era": "T0",
+    "prereq": [
+      "tech_t0_04"
+    ],
+    "cost": {
+      "science": 25
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_06",
+    "name": "T0 Expansion 06",
+    "desc": "T0 stage expansion node 06.",
+    "era": "T0",
+    "prereq": [
+      "tech_t0_05"
+    ],
+    "cost": {
+      "science": 28
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_07",
+    "name": "T0 Expansion 07",
+    "desc": "T0 stage expansion node 07.",
+    "era": "T0",
+    "prereq": [
+      "tech_t0_06"
+    ],
+    "cost": {
+      "science": 31
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t0_08",
+    "name": "T0 Expansion 08",
+    "desc": "T0 stage expansion node 08.",
+    "era": "T0",
+    "prereq": [
+      "tech_t0_07"
+    ],
+    "cost": {
+      "science": 34
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_01",
+    "name": "T1 Expansion 01",
+    "desc": "T1 stage expansion node 01.",
+    "era": "T1",
+    "prereq": [
+      "tech_control_theory"
+    ],
+    "cost": {
+      "science": 31
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_02",
+    "name": "T1 Expansion 02",
+    "desc": "T1 stage expansion node 02.",
+    "era": "T1",
+    "prereq": [
+      "tech_t1_01"
+    ],
+    "cost": {
+      "science": 34
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_03",
+    "name": "T1 Expansion 03",
+    "desc": "T1 stage expansion node 03.",
+    "era": "T1",
+    "prereq": [
+      "tech_t1_02"
+    ],
+    "cost": {
+      "science": 37
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_04",
+    "name": "T1 Expansion 04",
+    "desc": "T1 stage expansion node 04.",
+    "era": "T1",
+    "prereq": [
+      "tech_t1_03"
+    ],
+    "cost": {
+      "science": 40
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_05",
+    "name": "T1 Expansion 05",
+    "desc": "T1 stage expansion node 05.",
+    "era": "T1",
+    "prereq": [
+      "tech_t1_04"
+    ],
+    "cost": {
+      "science": 43
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_06",
+    "name": "T1 Expansion 06",
+    "desc": "T1 stage expansion node 06.",
+    "era": "T1",
+    "prereq": [
+      "tech_t1_05"
+    ],
+    "cost": {
+      "science": 46
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_07",
+    "name": "T1 Expansion 07",
+    "desc": "T1 stage expansion node 07.",
+    "era": "T1",
+    "prereq": [
+      "tech_t1_06"
+    ],
+    "cost": {
+      "science": 49
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t1_08",
+    "name": "T1 Expansion 08",
+    "desc": "T1 stage expansion node 08.",
+    "era": "T1",
+    "prereq": [
+      "tech_t1_07"
+    ],
+    "cost": {
+      "science": 52
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_01",
+    "name": "T2 Expansion 01",
+    "desc": "T2 stage expansion node 01.",
+    "era": "T2",
+    "prereq": [
+      "tech_chip_lithography"
+    ],
+    "cost": {
+      "science": 49
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_02",
+    "name": "T2 Expansion 02",
+    "desc": "T2 stage expansion node 02.",
+    "era": "T2",
+    "prereq": [
+      "tech_t2_01"
+    ],
+    "cost": {
+      "science": 52
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_03",
+    "name": "T2 Expansion 03",
+    "desc": "T2 stage expansion node 03.",
+    "era": "T2",
+    "prereq": [
+      "tech_t2_02"
+    ],
+    "cost": {
+      "science": 55
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_04",
+    "name": "T2 Expansion 04",
+    "desc": "T2 stage expansion node 04.",
+    "era": "T2",
+    "prereq": [
+      "tech_t2_03"
+    ],
+    "cost": {
+      "science": 58
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_05",
+    "name": "T2 Expansion 05",
+    "desc": "T2 stage expansion node 05.",
+    "era": "T2",
+    "prereq": [
+      "tech_t2_04"
+    ],
+    "cost": {
+      "science": 61
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_06",
+    "name": "T2 Expansion 06",
+    "desc": "T2 stage expansion node 06.",
+    "era": "T2",
+    "prereq": [
+      "tech_t2_05"
+    ],
+    "cost": {
+      "science": 64
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_07",
+    "name": "T2 Expansion 07",
+    "desc": "T2 stage expansion node 07.",
+    "era": "T2",
+    "prereq": [
+      "tech_t2_06"
+    ],
+    "cost": {
+      "science": 67
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t2_08",
+    "name": "T2 Expansion 08",
+    "desc": "T2 stage expansion node 08.",
+    "era": "T2",
+    "prereq": [
+      "tech_t2_07"
+    ],
+    "cost": {
+      "science": 70
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_01",
+    "name": "T3 Expansion 01",
+    "desc": "T3 stage expansion node 01.",
+    "era": "T3",
+    "prereq": [
+      "tech_anchor"
+    ],
+    "cost": {
+      "science": 67
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_02",
+    "name": "T3 Expansion 02",
+    "desc": "T3 stage expansion node 02.",
+    "era": "T3",
+    "prereq": [
+      "tech_t3_01"
+    ],
+    "cost": {
+      "science": 70
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_03",
+    "name": "T3 Expansion 03",
+    "desc": "T3 stage expansion node 03.",
+    "era": "T3",
+    "prereq": [
+      "tech_t3_02"
+    ],
+    "cost": {
+      "science": 73
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_04",
+    "name": "T3 Expansion 04",
+    "desc": "T3 stage expansion node 04.",
+    "era": "T3",
+    "prereq": [
+      "tech_t3_03"
+    ],
+    "cost": {
+      "science": 76
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_05",
+    "name": "T3 Expansion 05",
+    "desc": "T3 stage expansion node 05.",
+    "era": "T3",
+    "prereq": [
+      "tech_t3_04"
+    ],
+    "cost": {
+      "science": 79
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_06",
+    "name": "T3 Expansion 06",
+    "desc": "T3 stage expansion node 06.",
+    "era": "T3",
+    "prereq": [
+      "tech_t3_05"
+    ],
+    "cost": {
+      "science": 82
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_07",
+    "name": "T3 Expansion 07",
+    "desc": "T3 stage expansion node 07.",
+    "era": "T3",
+    "prereq": [
+      "tech_t3_06"
+    ],
+    "cost": {
+      "science": 85
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t3_08",
+    "name": "T3 Expansion 08",
+    "desc": "T3 stage expansion node 08.",
+    "era": "T3",
+    "prereq": [
+      "tech_t3_07"
+    ],
+    "cost": {
+      "science": 88
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_01",
+    "name": "T4 Expansion 01",
+    "desc": "T4 stage expansion node 01.",
+    "era": "T4",
+    "prereq": [
+      "tech_seed_protocol"
+    ],
+    "cost": {
+      "science": 85
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_02",
+    "name": "T4 Expansion 02",
+    "desc": "T4 stage expansion node 02.",
+    "era": "T4",
+    "prereq": [
+      "tech_t4_01"
+    ],
+    "cost": {
+      "science": 88
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_03",
+    "name": "T4 Expansion 03",
+    "desc": "T4 stage expansion node 03.",
+    "era": "T4",
+    "prereq": [
+      "tech_t4_02"
+    ],
+    "cost": {
+      "science": 91
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_04",
+    "name": "T4 Expansion 04",
+    "desc": "T4 stage expansion node 04.",
+    "era": "T4",
+    "prereq": [
+      "tech_t4_03"
+    ],
+    "cost": {
+      "science": 94
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_05",
+    "name": "T4 Expansion 05",
+    "desc": "T4 stage expansion node 05.",
+    "era": "T4",
+    "prereq": [
+      "tech_t4_04"
+    ],
+    "cost": {
+      "science": 97
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_06",
+    "name": "T4 Expansion 06",
+    "desc": "T4 stage expansion node 06.",
+    "era": "T4",
+    "prereq": [
+      "tech_t4_05"
+    ],
+    "cost": {
+      "science": 100
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_07",
+    "name": "T4 Expansion 07",
+    "desc": "T4 stage expansion node 07.",
+    "era": "T4",
+    "prereq": [
+      "tech_t4_06"
+    ],
+    "cost": {
+      "science": 103
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "id": "tech_t4_08",
+    "name": "T4 Expansion 08",
+    "desc": "T4 stage expansion node 08.",
+    "era": "T4",
+    "prereq": [
+      "tech_t4_07"
+    ],
+    "cost": {
+      "science": 106
+    },
+    "unlocks": [
+      {
+        "kind": "map_radius",
+        "amount": 1
+      }
+    ]
   }
 ]

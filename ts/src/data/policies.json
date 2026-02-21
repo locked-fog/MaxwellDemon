@@ -1,44 +1,730 @@
 [
   {
     "id": "policy_industry_push",
-    "name": "工业冲刺",
-    "desc": "提高产能但增加熵",
+    "name": "Industry Push",
+    "desc": "Higher throughput with faster entropy gain.",
     "track": "Industry",
     "prereq": [],
     "effects": [
-      { "kind": "modifier", "target": "throughput", "operator": "mul", "value": 1.1 },
-      { "kind": "modifier", "target": "entropy_gain", "operator": "mul", "value": 1.08 }
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.05
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.04
+      }
+    ]
+  },
+  {
+    "id": "policy_industry_02",
+    "name": "Industry Track 02",
+    "desc": "Industry progression level 2.",
+    "track": "Industry",
+    "prereq": [
+      "policy_industry_push"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.1
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.08
+      }
+    ]
+  },
+  {
+    "id": "policy_industry_03",
+    "name": "Industry Track 03",
+    "desc": "Industry progression level 3.",
+    "track": "Industry",
+    "prereq": [
+      "policy_industry_02"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.15
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.12
+      }
+    ]
+  },
+  {
+    "id": "policy_industry_04",
+    "name": "Industry Track 04",
+    "desc": "Industry progression level 4.",
+    "track": "Industry",
+    "prereq": [
+      "policy_industry_03"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.2
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.16
+      }
+    ]
+  },
+  {
+    "id": "policy_industry_05",
+    "name": "Industry Track 05",
+    "desc": "Industry progression level 5.",
+    "track": "Industry",
+    "prereq": [
+      "policy_industry_04"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.25
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.2
+      }
+    ]
+  },
+  {
+    "id": "policy_industry_06",
+    "name": "Industry Track 06",
+    "desc": "Industry progression level 6.",
+    "track": "Industry",
+    "prereq": [
+      "policy_industry_05"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.3
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.24
+      }
+    ]
+  },
+  {
+    "id": "policy_industry_07",
+    "name": "Industry Track 07",
+    "desc": "Industry progression level 7.",
+    "track": "Industry",
+    "prereq": [
+      "policy_industry_06"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.35
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.28
+      }
+    ]
+  },
+  {
+    "id": "policy_industry_08",
+    "name": "Industry Track 08",
+    "desc": "Industry progression level 8.",
+    "track": "Industry",
+    "prereq": [
+      "policy_industry_07"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.4
+      },
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 1.32
+      }
     ]
   },
   {
     "id": "policy_ecology_balance",
-    "name": "生态平衡",
-    "desc": "降低熵增但减少产能",
+    "name": "Ecology Balance",
+    "desc": "Lower entropy growth with lower throughput.",
     "track": "Ecology",
     "prereq": [],
     "effects": [
-      { "kind": "modifier", "target": "entropy_gain", "operator": "mul", "value": 0.9 },
-      { "kind": "modifier", "target": "throughput", "operator": "mul", "value": 0.95 }
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.94
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.98
+      }
+    ]
+  },
+  {
+    "id": "policy_ecology_02",
+    "name": "Ecology Track 02",
+    "desc": "Ecology progression level 2.",
+    "track": "Ecology",
+    "prereq": [
+      "policy_ecology_balance"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.88
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.96
+      }
+    ]
+  },
+  {
+    "id": "policy_ecology_03",
+    "name": "Ecology Track 03",
+    "desc": "Ecology progression level 3.",
+    "track": "Ecology",
+    "prereq": [
+      "policy_ecology_02"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.8200000000000001
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.94
+      }
+    ]
+  },
+  {
+    "id": "policy_ecology_04",
+    "name": "Ecology Track 04",
+    "desc": "Ecology progression level 4.",
+    "track": "Ecology",
+    "prereq": [
+      "policy_ecology_03"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.76
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.92
+      }
+    ]
+  },
+  {
+    "id": "policy_ecology_05",
+    "name": "Ecology Track 05",
+    "desc": "Ecology progression level 5.",
+    "track": "Ecology",
+    "prereq": [
+      "policy_ecology_04"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.7
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.9
+      }
+    ]
+  },
+  {
+    "id": "policy_ecology_06",
+    "name": "Ecology Track 06",
+    "desc": "Ecology progression level 6.",
+    "track": "Ecology",
+    "prereq": [
+      "policy_ecology_05"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.64
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.88
+      }
+    ]
+  },
+  {
+    "id": "policy_ecology_07",
+    "name": "Ecology Track 07",
+    "desc": "Ecology progression level 7.",
+    "track": "Ecology",
+    "prereq": [
+      "policy_ecology_06"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.6
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.86
+      }
+    ]
+  },
+  {
+    "id": "policy_ecology_08",
+    "name": "Ecology Track 08",
+    "desc": "Ecology progression level 8.",
+    "track": "Ecology",
+    "prereq": [
+      "policy_ecology_07"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "entropy_gain",
+        "operator": "mul",
+        "value": 0.6
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 0.84
+      }
     ]
   },
   {
     "id": "policy_faith_order",
-    "name": "信条秩序",
-    "desc": "降低崩坏压力增长",
+    "name": "Faith Order",
+    "desc": "Lower collapse pressure and better power efficiency.",
     "track": "Faith",
     "prereq": [],
     "effects": [
-      { "kind": "modifier", "target": "collapse_pressure", "operator": "mul", "value": 0.92 }
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.95
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.03
+      }
+    ]
+  },
+  {
+    "id": "policy_faith_02",
+    "name": "Faith Track 02",
+    "desc": "Faith progression level 2.",
+    "track": "Faith",
+    "prereq": [
+      "policy_faith_order"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.9
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.06
+      }
+    ]
+  },
+  {
+    "id": "policy_faith_03",
+    "name": "Faith Track 03",
+    "desc": "Faith progression level 3.",
+    "track": "Faith",
+    "prereq": [
+      "policy_faith_02"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.85
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.09
+      }
+    ]
+  },
+  {
+    "id": "policy_faith_04",
+    "name": "Faith Track 04",
+    "desc": "Faith progression level 4.",
+    "track": "Faith",
+    "prereq": [
+      "policy_faith_03"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.8
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.12
+      }
+    ]
+  },
+  {
+    "id": "policy_faith_05",
+    "name": "Faith Track 05",
+    "desc": "Faith progression level 5.",
+    "track": "Faith",
+    "prereq": [
+      "policy_faith_04"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.75
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.15
+      }
+    ]
+  },
+  {
+    "id": "policy_faith_06",
+    "name": "Faith Track 06",
+    "desc": "Faith progression level 6.",
+    "track": "Faith",
+    "prereq": [
+      "policy_faith_05"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.7
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.18
+      }
+    ]
+  },
+  {
+    "id": "policy_faith_07",
+    "name": "Faith Track 07",
+    "desc": "Faith progression level 7.",
+    "track": "Faith",
+    "prereq": [
+      "policy_faith_06"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.6499999999999999
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.21
+      }
+    ]
+  },
+  {
+    "id": "policy_faith_08",
+    "name": "Faith Track 08",
+    "desc": "Faith progression level 8.",
+    "track": "Faith",
+    "prereq": [
+      "policy_faith_07"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "collapse_pressure",
+        "operator": "mul",
+        "value": 0.6
+      },
+      {
+        "kind": "modifier",
+        "target": "power_efficiency",
+        "operator": "mul",
+        "value": 1.24
+      }
     ]
   },
   {
     "id": "policy_trade_liberal",
-    "name": "自由贸易",
-    "desc": "改善市场价格",
+    "name": "Trade Liberalization",
+    "desc": "Lower market price pressure and slight throughput gain.",
     "track": "Trade",
     "prereq": [],
     "effects": [
-      { "kind": "modifier", "target": "market_price", "operator": "mul", "value": 0.95 }
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.95
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.02
+      }
+    ]
+  },
+  {
+    "id": "policy_trade_02",
+    "name": "Trade Track 02",
+    "desc": "Trade progression level 2.",
+    "track": "Trade",
+    "prereq": [
+      "policy_trade_liberal"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.9
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.04
+      }
+    ]
+  },
+  {
+    "id": "policy_trade_03",
+    "name": "Trade Track 03",
+    "desc": "Trade progression level 3.",
+    "track": "Trade",
+    "prereq": [
+      "policy_trade_02"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.85
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.06
+      }
+    ]
+  },
+  {
+    "id": "policy_trade_04",
+    "name": "Trade Track 04",
+    "desc": "Trade progression level 4.",
+    "track": "Trade",
+    "prereq": [
+      "policy_trade_03"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.8
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.08
+      }
+    ]
+  },
+  {
+    "id": "policy_trade_05",
+    "name": "Trade Track 05",
+    "desc": "Trade progression level 5.",
+    "track": "Trade",
+    "prereq": [
+      "policy_trade_04"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.75
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.1
+      }
+    ]
+  },
+  {
+    "id": "policy_trade_06",
+    "name": "Trade Track 06",
+    "desc": "Trade progression level 6.",
+    "track": "Trade",
+    "prereq": [
+      "policy_trade_05"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.7
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.12
+      }
+    ]
+  },
+  {
+    "id": "policy_trade_07",
+    "name": "Trade Track 07",
+    "desc": "Trade progression level 7.",
+    "track": "Trade",
+    "prereq": [
+      "policy_trade_06"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.6499999999999999
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.1400000000000001
+      }
+    ]
+  },
+  {
+    "id": "policy_trade_08",
+    "name": "Trade Track 08",
+    "desc": "Trade progression level 8.",
+    "track": "Trade",
+    "prereq": [
+      "policy_trade_07"
+    ],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "market_price",
+        "operator": "mul",
+        "value": 0.6
+      },
+      {
+        "kind": "modifier",
+        "target": "throughput",
+        "operator": "mul",
+        "value": 1.16
+      }
     ]
   }
 ]

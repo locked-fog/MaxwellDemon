@@ -19,13 +19,20 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useMemo, useReducer, useRef, useState } from 'react'
 import type { DragEvent as ReactDragEvent } from 'react'
+import nodeTypesJson from '../../data/nodeTypes.json'
 import recipesJson from '../../data/recipes.json'
 import resourcesJson from '../../data/resources.json'
 import { useWorldSession } from '../../app/state/worldState'
+import {
+  computeUnlockState,
+  countLockedGraphEntries,
+  readFirstLockedGraphReason,
+} from '../progress'
 import type {
   EdgeInstance,
   GraphState,
   NodeInstance,
+  NodeTypeDef,
   NodeTypeId,
   RecipeDef,
   ResourceDef,
@@ -47,10 +54,12 @@ const NODE_TYPES: NodeTypeId[] = [
   'research',
 ]
 
+const NODE_TYPE_DEFS = nodeTypesJson as NodeTypeDef[]
 const RECIPES = recipesJson as RecipeDef[]
 const RESOURCES = resourcesJson as ResourceDef[]
 const RECIPE_IDS = RECIPES.map((recipe) => recipe.id).sort()
 const RESOURCE_IDS = RESOURCES.map((resource) => resource.id).sort()
+const ALLOWED_RECIPES_BY_NODE_TYPE = createAllowedRecipeMap(NODE_TYPE_DEFS)
 
 const EMPTY_GRAPH: GraphState = {
   nodes: [],
@@ -154,6 +163,24 @@ const NODE_PARAM_FIELDS: Record<NodeTypeId, ParamFieldDef[]> = {
   research: [],
 }
 
+function createNodeParamFields(unlockedRecipeIds: string[]): Record<NodeTypeId, ParamFieldDef[]> {
+  const recipeOptions = (ALLOWED_RECIPES_BY_NODE_TYPE.get('processor') ?? []).filter((recipeId) =>
+    unlockedRecipeIds.includes(recipeId)
+  )
+
+  return {
+    ...NODE_PARAM_FIELDS,
+    processor: NODE_PARAM_FIELDS.processor.map((field) =>
+      field.key === 'recipeId'
+        ? {
+            ...field,
+            options: recipeOptions,
+          }
+        : field
+    ),
+  }
+}
+
 function FlowNodeCard({ data, selected }: NodeProps<FlowNode>) {
   return (
     <div className={selected ? 'flow-node-card selected' : 'flow-node-card'}>
@@ -193,11 +220,21 @@ const FLOW_NODE_TYPES = {
 }
 
 export function GraphEditorPage() {
-  const { selectedBlock, unlockBlock, canUnlock, setSelectedBlockGraph } = useWorldSession()
+  const { world, selectedBlock, unlockBlock, canUnlock, setSelectedBlockGraph } = useWorldSession()
   const [editorState, dispatch] = useReducer(reduceGraphEditorState, undefined, createGraphEditorState)
   const [errorText, setErrorText] = useState<string | null>(null)
   const flowRef = useRef<ReactFlowInstance<FlowNode, Edge> | null>(null)
   const canvasRef = useRef<HTMLDivElement | null>(null)
+  const unlockState = useMemo(() => computeUnlockState(world.progress), [world.progress])
+  const unlockedNodeTypes = useMemo(
+    () => NODE_TYPES.filter((nodeType) => unlockState.unlockedNodeTypeIds.has(nodeType)),
+    [unlockState]
+  )
+  const unlockedRecipeIds = useMemo(
+    () => RECIPE_IDS.filter((recipeId) => unlockState.unlockedRecipeIds.has(recipeId)),
+    [unlockState]
+  )
+  const nodeParamFields = useMemo(() => createNodeParamFields(unlockedRecipeIds), [unlockedRecipeIds])
 
   const graph = selectedBlock?.graph ?? EMPTY_GRAPH
   const flowNodes = useMemo(() => toFlowNodes(graph.nodes), [graph.nodes])
@@ -227,7 +264,17 @@ export function GraphEditorPage() {
   }
 
   function commitGraph(nextGraph: GraphState): void {
+    const currentLockedCount = countLockedGraphEntries(graph, unlockState)
+    const nextLockedCount = countLockedGraphEntries(nextGraph, unlockState)
+    if (nextLockedCount > currentLockedCount) {
+      setErrorText(
+        readFirstLockedGraphReason(nextGraph, unlockState) ??
+          'Graph contains locked node type or recipe.'
+      )
+      return
+    }
     setSelectedBlockGraph(nextGraph)
+    setErrorText(null)
   }
 
   function updateNode(nodeId: string, apply: (node: NodeInstance) => NodeInstance): void {
@@ -267,6 +314,12 @@ export function GraphEditorPage() {
   }
 
   function setNodeParam(nodeId: string, key: string, value: string | number | undefined): void {
+    if (key === 'recipeId' && typeof value === 'string' && value.length > 0) {
+      if (!unlockState.unlockedRecipeIds.has(value)) {
+        setErrorText(`Recipe is locked: ${value}`)
+        return
+      }
+    }
     updateNode(nodeId, (node) => {
       const nextParams: Record<string, unknown> = { ...node.params }
       if (value === undefined) {
@@ -337,6 +390,10 @@ export function GraphEditorPage() {
   }
 
   function addNodeAt(nodeType: NodeTypeId, x: number, y: number): void {
+    if (!unlockState.unlockedNodeTypeIds.has(nodeType)) {
+      setErrorText(`Node type is locked: ${nodeType}`)
+      return
+    }
     const safeX = Number.isFinite(x) ? x : 0
     const safeY = Number.isFinite(y) ? y : 0
     const node: NodeInstance = {
@@ -344,7 +401,7 @@ export function GraphEditorPage() {
       type: nodeType,
       x: safeX,
       y: safeY,
-      params: createDefaultParams(nodeType),
+      params: createDefaultParams(nodeType, unlockedRecipeIds),
       enabled: true,
     }
 
@@ -476,6 +533,10 @@ export function GraphEditorPage() {
   }
 
   function onToolboxDragStart(event: ReactDragEvent<HTMLButtonElement>, nodeType: NodeTypeId): void {
+    if (!unlockState.unlockedNodeTypeIds.has(nodeType)) {
+      event.preventDefault()
+      return
+    }
     event.dataTransfer.setData(DRAG_NODE_MIME, nodeType)
     event.dataTransfer.effectAllowed = 'copy'
     dispatch({ type: 'set_draft_node_type', nodeType })
@@ -505,7 +566,7 @@ export function GraphEditorPage() {
 
   const selectedNode = graph.nodes.find((node) => node.id === editorState.selectedNodeId)
   const selectedEdge = graph.edges.find((edge) => edge.id === editorState.selectedEdgeId)
-  const selectedNodeFields = selectedNode ? NODE_PARAM_FIELDS[selectedNode.type] : []
+  const selectedNodeFields = selectedNode ? nodeParamFields[selectedNode.type] : []
 
   return (
     <PageCard title="Graph Editor" subtitle="M3: visual graph editing, rules, and parameter panel">
@@ -518,7 +579,15 @@ export function GraphEditorPage() {
                 <button
                   key={nodeType}
                   type="button"
-                  className={nodeType === editorState.draftNodeType ? 'toolbox-item active' : 'toolbox-item'}
+                  className={
+                    nodeType === editorState.draftNodeType ? 'toolbox-item active' : 'toolbox-item'
+                  }
+                  disabled={!unlockState.unlockedNodeTypeIds.has(nodeType)}
+                  title={
+                    unlockState.unlockedNodeTypeIds.has(nodeType)
+                      ? `Place ${nodeType}`
+                      : `Locked by tech: ${nodeType}`
+                  }
                   draggable
                   onClick={() => addNodeAtViewportCenter(nodeType)}
                   onDragStart={(event) => onToolboxDragStart(event, nodeType)}
@@ -590,6 +659,9 @@ export function GraphEditorPage() {
             <p>Slots: {selectedBlock.capacitySlots}</p>
             <p>Outlet cap/tick: {formatMetric(selectedBlock.outletCapacityPerTick)}</p>
             <p>Yield sum/tick: {formatMetric(sumValues(selectedBlock.extractionRatePerTick))}</p>
+            <p>
+              Buildables: {unlockedNodeTypes.length} nodes / {unlockedRecipeIds.length} recipes
+            </p>
           </div>
 
           <h3>Selection</h3>
@@ -639,7 +711,10 @@ export function GraphEditorPage() {
                   }
 
                   if (field.kind === 'select') {
-                    const options = field.options ?? []
+                    const options =
+                      selectedNode.type === 'processor' && field.key === 'recipeId'
+                        ? (field.options ?? []).filter((option) => unlockState.unlockedRecipeIds.has(option))
+                        : field.options ?? []
                     const stringValue = typeof value === 'string' ? value : ''
 
                     return (
@@ -832,12 +907,15 @@ function mapFlowEdgesToDomain(flowEdges: Edge[], sourceEdges: EdgeInstance[]): E
     })
 }
 
-function createDefaultParams(nodeType: NodeTypeId): Record<string, unknown> {
+function createDefaultParams(
+  nodeType: NodeTypeId,
+  unlockedRecipeIds: string[]
+): Record<string, unknown> {
   switch (nodeType) {
     case 'extractor':
       return { resourceId: 'ore', ratePerTick: 1, powerPerTick: 1, outputPort: 'out' }
     case 'processor':
-      return { recipeId: 'smelt_ingot', inputPort: 'in', outputPort: 'out' }
+      return { recipeId: unlockedRecipeIds[0] ?? '', inputPort: 'in', outputPort: 'out' }
     case 'power_gen':
       return { powerPerTick: 10 }
     case 'port_in':
@@ -968,4 +1046,14 @@ function readNodeStatusToneFromMiniMapNode(node: Node): FlowNodeStatusTone | und
     return tone
   }
   return undefined
+}
+
+function createAllowedRecipeMap(defs: NodeTypeDef[]): Map<NodeTypeId, string[]> {
+  const map = new Map<NodeTypeId, string[]>()
+  for (const def of defs) {
+    const allowed = Array.isArray(def.allowedRecipes) ? def.allowedRecipes : []
+    const normalized = allowed.filter((recipeId) => RECIPE_IDS.includes(recipeId))
+    map.set(def.id, normalized)
+  }
+  return map
 }

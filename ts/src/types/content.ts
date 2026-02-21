@@ -37,6 +37,7 @@ export interface TechDef {
   name: string
   desc: string
   era: EraId
+  order?: number
   prereq: string[]
   cost: { science: number }
   unlocks: UnlockDef[]
@@ -47,6 +48,7 @@ export interface PolicyDef {
   name: string
   desc: string
   track: PolicyTrack
+  order?: number
   prereq: string[]
   effects: EffectDef[]
 }

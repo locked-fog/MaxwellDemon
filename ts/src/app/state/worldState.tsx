@@ -18,6 +18,7 @@ import {
   SaveFormatError,
 } from '../../features/save'
 import type { BlockState, GraphState, WorldState } from '../../types'
+import { canSelectPolicy, canUnlockTech, getWorldScience } from '../../features/progress'
 import {
   createInitialWorld,
   createInitialSession,
@@ -39,6 +40,9 @@ interface WorldSessionContextValue {
   selectBlock: (blockId: string) => void
   unlockBlock: (blockId: string) => void
   setSelectedBlockGraph: (graph: GraphState) => void
+  unlockTech: (techId: string) => { ok: boolean; reason?: string }
+  togglePolicy: (policyId: string) => { ok: boolean; reason?: string }
+  getWorldScience: () => number
   tickWorld: (tickCount?: number) => void
   canUnlock: (blockId: string) => boolean
   listNeighbors: (blockId: string) => BlockState[]
@@ -78,6 +82,29 @@ export function WorldSessionProvider({
   const setSelectedBlockGraph = useCallback(
     (graph: GraphState) => dispatch({ type: 'set_selected_block_graph', graph }),
     [dispatch]
+  )
+  const unlockTech = useCallback(
+    (techId: string) => {
+      const check = canUnlockTech(session.world, techId)
+      if (!check.ok) {
+        return check
+      }
+      dispatch({ type: 'unlock_tech', techId })
+      return { ok: true }
+    },
+    [dispatch, session.world]
+  )
+  const togglePolicy = useCallback(
+    (policyId: string) => {
+      const check = canSelectPolicy(session.world, policyId)
+      const selected = session.world.progress.selectedPolicyIds.includes(policyId)
+      if (!check.ok && !selected) {
+        return check
+      }
+      dispatch({ type: 'toggle_policy', policyId })
+      return { ok: true }
+    },
+    [dispatch, session.world]
   )
   const tickWorld = useCallback(
     (tickCount: number = 1) => dispatch({ type: 'tick_world', tickCount }),
@@ -195,6 +222,9 @@ export function WorldSessionProvider({
       selectBlock,
       unlockBlock,
       setSelectedBlockGraph,
+      unlockTech,
+      togglePolicy,
+      getWorldScience: () => getWorldScience(session.world.blocks),
       tickWorld,
       canUnlock: (blockId: string) => isBlockUnlockable(session.world, blockId),
       listNeighbors: (blockId: string) => listNeighborBlocks(session.world, blockId),
@@ -213,7 +243,9 @@ export function WorldSessionProvider({
     selectBlock,
     session,
     setSelectedBlockGraph,
+    togglePolicy,
     tickWorld,
+    unlockTech,
     unlockBlock,
   ])
 
