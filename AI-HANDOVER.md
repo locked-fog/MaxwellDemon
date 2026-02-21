@@ -4,7 +4,8 @@ note: Use Chinese to communicate with USER
 
 ## 1. Purpose
 
-本文件是当前最新交接包。M6（存档系统）已完成，下一位 Agent 应直接进入 M7（科技树与政策树），不再重复大范围环境确认。
+本文件为最新交接包。M7（科技树与政策树）已完成并通过 `test/lint/build`。  
+下一优先级应进入 M8（交易/商人/任务/合同），避免重复进行大范围现状审阅。
 
 配套文档：
 - `Vibe-README.md`（产品与架构基线）
@@ -16,86 +17,75 @@ note: Use Chinese to communicate with USER
 
 - Repo root: `g:\Projects\MaxwellDemon\vibe`
 - Branch state:
-  - `main` == `origin/main` == `eb200db`
-  - 工作分支：`dev/m6-save-system`（包含 M6 完成改动，待/已用于 PR）
+  - 当前工作分支：`dev/m7-progress-system`
+  - 基线分支：`main`
 - Milestone status:
   - M2: done
   - M3: done
   - M4: done
   - M5: done and merged
   - M6: done
-  - M7+: pending
+  - M7: done (implemented)
+  - M8+: pending
 
 ---
 
-## 3. What Was Delivered (M6 Final)
+## 3. What Was Delivered (M7 Final)
 
-### 3.1 存档系统能力
+### 3.1 Progress 数据与规则层
 
-已实现浏览器内存档（静态部署友好）：
-1. `IndexedDB` 持久化（读档/写档）
-2. 启动时自动检测本地存档并恢复（有档自动进游戏）
-3. 自动存档按“每个游戏日（day）”触发
-4. 手动存档按钮 `Save Now`
-5. Play/Pause 每次点击均触发一次保存
+新增纯逻辑 progress 模块（不依赖 UI）：
+1. 数据载入与校验：`techs.json` / `policies.json`
+2. 结构校验、前置引用校验、科技环检测
+3. 核心函数：
+   - `canUnlockTech` / `unlockTech`
+   - `canSelectPolicy` / `togglePolicy`
+   - `computeProgressModifiers`
+   - `computeUnlockState`
 
-### 3.2 导入/导出与格式
+### 3.2 世界状态与 sim 接入
 
-已采用“版本化 base64 存档串”方案，不再使用 JSON 导入/导出：
-1. 导出格式：`MD_SAVE_B64_V1.<base64-envelope>`
-2. envelope 含 `kind/saveVersion/payload`，加载时做版本校验
-3. 导出支持两种方式：
-   - Copy to Clipboard
-   - Export to File
-4. 导入不再使用浏览器 `prompt`，改为页面内输入框（初始页与运行时均支持）
+1. `worldLogic` 新增 action：
+   - `unlock_tech`
+   - `toggle_policy`
+2. 科技成本按全局已解锁区块的 `science` 统一扣减（按区块 id 顺序，保证确定性）
+3. 扩展 `SimTickConfig` 并接入 modifier 通道：
+   - `throughputMultiplier`
+   - `powerEfficiencyMultiplier`
+   - `entropyGainMultiplier`
+4. 保持既有 tick 顺序不变：
+   - 电力 -> 节点处理 -> 连线传输 -> 端口交互 -> 跨区块抽取
 
-### 3.3 迁移与错误处理
+### 3.3 科技树/政策树 UI（非占位）
 
-1. 已接入 `saveVersion` 迁移链（含 `v0 -> v1` 可执行骨架）
-2. 非法/损坏存档会抛出明确错误（`SaveFormatError`），不静默失败
+1. 科技页：可查看、可解锁、失败原因可见
+2. 政策页：可选择/取消、效果即时生效
+3. 新增可见性控制：
+   - 默认仅显示“当前可解锁/可选择”
+   - 可切换显示“不可解锁/已解锁(已生效)”
+4. 政策页采用树形路径视图（按 track + 前置深度分列）
 
-### 3.4 资源模型调整（与用户最新需求对齐）
+### 3.4 可建内容门控
 
-1. 取消区块有限储量（移除 `deposits`）
-2. 资源抽取仅受 `ratePerTick` 与 `extractionRatePerTick` 限制
-3. 已同步清理存档结构与相关 UI 展示中的 `deposits` 口径
+`GraphEditorPage` 已按 progress 解锁状态过滤：
+1. 未解锁节点类型不可新增
+2. 未解锁配方不可选
+3. 提交 graph 时阻止新增锁定内容（允许清理旧锁定节点）
 
-### 3.5 主要改动文件
+### 3.5 M7 数据量完成
 
-- `ts/src/features/save/index.ts`
-- `ts/src/features/save/index.test.ts`
-- `ts/src/app/state/worldState.tsx`
-- `ts/src/app/state/worldLogic.ts`
-- `ts/src/app/App.tsx`
-- `ts/src/app/app.css`
-- `ts/src/types/world.ts`
-- `ts/src/features/sim/core.ts`
-- `ts/src/features/sim/core.test.ts`
-- `ts/src/app/state/worldLogic.test.ts`
-- `ts/src/features/map/MapPage.tsx`
-- `ts/src/features/graph/GraphEditorPage.tsx`
-- `ts/src/features/block/BlockPanelPage.tsx`
-- `Vibe-README.md`
-- `v0.1-scope.md`
-
-### 3.6 测试与校验
-
-在 `ts/` 执行并通过：
-- `npm run test`（36 passed）
-- `npm run lint`
-- `npm run build`
-
-新增/覆盖点：
-1. 导出 -> 导入后世界状态一致
-2. 旧版本存档迁移（`v0 -> v1`）可执行且不崩溃
-3. 非法存档输入有明确错误
-4. 取消 `deposits` 后 sim/world 测试口径已同步
+1. `techs.json` 已扩充至 `53` 项（>=50）
+2. `policies.json` 已扩充至 `32` 项（>=30，4 条主线）
+3. 为后续扩展增加可选排序字段：
+   - `TechDef.order?`
+   - `PolicyDef.order?`
+4. 数据层导出顺序索引（`orderedTechIds` / `orderedPolicyIds`），后续主要改 JSON 即可调整展示节奏
 
 ---
 
 ## 4. Critical Implementation Notes (Do Not Regress)
 
-1. Tick 顺序基线保持：
+1. Tick 顺序基线必须保持：
    - 区块内：电力 -> 节点处理 -> 连线传输 -> 端口交互
    - 世界级：所有解锁区块 `stepBlock` 后，再做跨区块抽取
 2. 跨区块需求来源必须是 `SimTickResult.unmetDemand`，不要回退到库存估算。
@@ -105,58 +95,80 @@ note: Use Chinese to communicate with USER
    - 资源按 `resourceId` 排序
    - 邻接按固定顺时针偏移顺序
 5. `features/sim` 必须保持纯逻辑，不依赖 UI。
-6. 存档格式已切换为版本化 base64；不要回退为 JSON 导入/导出。
-7. 区块不再有有限储量字段 `deposits`；不要在新逻辑里重新引入该约束。
+6. 存档格式保持版本化 base64 + `saveVersion`，不要回退为 JSON 导入/导出。
+7. 区块无 `deposits` 有限储量约束，不要重新引入。
 
 ---
 
-## 5. Next Priority (M7 Progress System)
+## 5. Main Changed Files (M7)
 
-按 `Vibe-README.md` / `v0.1-scope.md` 的 M7 开发：
-- 目标：科技树与政策树的数据读入、前置校验、解锁与 modifier 生效
-- 完成标准：科技/政策真实影响 sim（非仅展示）
-
-建议入口：
-- `ts/src/features/progress/*`
+- `ts/src/features/progress/data.ts`
+- `ts/src/features/progress/core.ts`
+- `ts/src/features/progress/index.ts`
+- `ts/src/features/progress/TechTreePage.tsx`
+- `ts/src/features/progress/PolicyTreePage.tsx`
+- `ts/src/features/progress/progress.css`
+- `ts/src/features/progress/data.test.ts`
+- `ts/src/features/progress/core.test.ts`
+- `ts/src/app/state/worldLogic.ts`
+- `ts/src/app/state/worldState.tsx`
+- `ts/src/app/state/worldLogic.test.ts`
+- `ts/src/features/sim/types.ts`
+- `ts/src/features/sim/core.ts`
+- `ts/src/features/sim/core.test.ts`
+- `ts/src/features/graph/GraphEditorPage.tsx`
 - `ts/src/data/techs.json`
 - `ts/src/data/policies.json`
-- `ts/src/app/state/*`（仅最小接入）
+- `ts/src/types/content.ts`
 
 ---
 
-## 6. Branch Workflow Constraints
+## 6. Validation Results
 
-用户要求分支视图干净，严格遵循：
+在 `ts/` 执行并通过：
+- `npm run test`（49 passed）
+- `npm run lint`
+- `npm run build`
+
+新增覆盖点（M7）：
+1. progress 数据校验（唯一 id、前置可达、环检测）
+2. 科技解锁/扣费与政策槽约束
+3. modifier 对 sim 的吞吐/电力/熵影响
+4. world reducer action（`unlock_tech` / `toggle_policy`）行为验证
+
+---
+
+## 7. Next Priority (M8)
+
+按 `Vibe-README.md` / `v0.1-scope.md` 进入 M8：
+1. 本地市场 + 商人库存与价格波动
+2. 日常/周常刷新（现实时间）
+3. 合同履约/违约与信誉系统
+4. 存档覆盖交易状态并可迁移
+
+建议入口：
+- `ts/src/features/trade/*`
+- `ts/src/types/trade.ts`
+- `ts/src/features/save/index.ts`
+
+---
+
+## 8. Branch Workflow Constraints
+
+用户要求分支视图干净，继续遵循：
 1. `git fetch origin`
 2. `git switch main`
 3. `git merge --ff-only origin/main`
-4. 从 `main` 新切里程碑分支（例如 `dev/m7-progress-system`）
+4. 从 `main` 新切里程碑分支（如 `dev/m8-trade-system`）
 
-不要在已合并的里程碑分支上继续叠加下一里程碑开发。
-
----
-
-## 7. Quick Start For Next Agent
-
-在仓库根目录执行：
-
-1. `git fetch origin`
-2. `git switch main`
-3. `git merge --ff-only origin/main`
-4. `git switch -c dev/m7-progress-system`
-5. `cd ts`
-6. `npm run test`
-7. `npm run lint`
-8. `npm run build`
-
-然后直接开始 M7 实现。
+不要在已合并里程碑分支上叠加下个里程碑开发。
 
 ---
 
-## 8. Handover Checklist (When Passing Again)
+## 9. Handover Checklist (When Passing Again)
 
-下次交接前，请在本文件补齐：
-1. 当前分支与 commit 对齐关系（`main`/`origin/main`/工作分支）
+下次交接前请补齐：
+1. 当前分支与 commit 对齐关系（`main` / `origin/main` / 工作分支）
 2. 本轮新增/修改文件清单
 3. 测试新增点与 `test/lint/build` 结果
 4. 未完成项、风险点、阻塞点

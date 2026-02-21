@@ -1,4 +1,9 @@
 import recipesJson from '../../data/recipes.json'
+import {
+  computeProgressModifiers,
+  togglePolicy as togglePolicyInWorld,
+  unlockTech as unlockTechInWorld,
+} from '../../features/progress'
 import { stepBlock } from '../../features/sim'
 import type { BlockCoord, BlockState, GraphState, RecipeDef, TerrainId, WorldState } from '../../types'
 import { fbm2 } from '../../utils/noise'
@@ -28,6 +33,8 @@ export type WorldAction =
   | { type: 'select_block'; blockId: string }
   | { type: 'unlock_block'; blockId: string }
   | { type: 'set_selected_block_graph'; graph: GraphState }
+  | { type: 'unlock_tech'; techId: string }
+  | { type: 'toggle_policy'; policyId: string }
   | { type: 'replace_world'; world: WorldState; selectedBlockId?: string }
   | { type: 'tick_world'; tickCount?: number; nowUnixMs?: number }
 
@@ -106,6 +113,12 @@ export function reduceWorldSession(state: WorldSessionState, action: WorldAction
   }
   if (action.type === 'set_selected_block_graph') {
     return setSelectedBlockGraph(state, action.graph)
+  }
+  if (action.type === 'unlock_tech') {
+    return unlockTech(state, action.techId)
+  }
+  if (action.type === 'toggle_policy') {
+    return togglePolicy(state, action.policyId)
   }
   if (action.type === 'replace_world') {
     return replaceWorld(state, action.world, action.selectedBlockId)
@@ -291,6 +304,7 @@ function tickWorldOnce(world: WorldState): WorldState {
   const simByBlockId = new Map<string, BlockState>()
   const unmetDemandByBlockId = new Map<string, Record<string, number>>()
   const sortedBlocks = [...world.blocks].sort((a, b) => a.id.localeCompare(b.id))
+  const progressModifiers = computeProgressModifiers(world.progress)
 
   for (const block of sortedBlocks) {
     if (!block.unlocked) {
@@ -299,6 +313,9 @@ function tickWorldOnce(world: WorldState): WorldState {
     const result = stepBlock(block, {
       tickDays: world.time.tickDays,
       entropyFactor: world.macro.macroEntropy,
+      entropyGainMultiplier: progressModifiers.entropyGainMultiplier,
+      throughputMultiplier: progressModifiers.throughputMultiplier,
+      powerEfficiencyMultiplier: progressModifiers.powerEfficiencyMultiplier,
       recipes: RECIPES_BY_ID,
     })
     simByBlockId.set(block.id, result.block)
@@ -318,6 +335,28 @@ function tickWorldOnce(world: WorldState): WorldState {
       tick: nextTick,
       day: nextDay,
     },
+  }
+}
+
+function unlockTech(state: WorldSessionState, techId: string): WorldSessionState {
+  const result = unlockTechInWorld(state.world, techId)
+  if (!result.ok || !result.world) {
+    return state
+  }
+  return {
+    ...state,
+    world: result.world,
+  }
+}
+
+function togglePolicy(state: WorldSessionState, policyId: string): WorldSessionState {
+  const result = togglePolicyInWorld(state.world, policyId)
+  if (!result.ok || !result.world) {
+    return state
+  }
+  return {
+    ...state,
+    world: result.world,
   }
 }
 
@@ -405,6 +444,8 @@ function createHexMap(targetCellCount: number, mapSeed: number): BlockState[] {
 
   return coords.map((coord) => {
     const terrain = terrainByCoord.get(toCoordKey(coord)) ?? 'plains'
+    const initialInventory: Record<string, number> =
+      coord.q === 0 && coord.r === 0 ? { science: 30 } : {}
     return {
       id: toBlockId(coord),
       coord,
@@ -413,7 +454,7 @@ function createHexMap(targetCellCount: number, mapSeed: number): BlockState[] {
       capacitySlots: 6,
       outletCapacityPerTick: 10,
       extractionRatePerTick: createExtractionRates(terrain, coord, mapSeed),
-      inventory: {},
+      inventory: initialInventory,
       graph: {
         nodes: [],
         edges: [],

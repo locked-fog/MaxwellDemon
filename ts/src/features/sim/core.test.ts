@@ -164,6 +164,75 @@ describe('stepBlock', () => {
 
     expect(result.unmetDemand.ore ?? 0).toBeCloseTo(0, 6)
   })
+
+  it('applies throughputMultiplier to extraction throughput', () => {
+    const block = createBaselineBlock()
+
+    const base = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      recipes,
+    })
+    const boosted = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      throughputMultiplier: 1.2,
+      recipes,
+    })
+
+    const baseEdge = base.block.graph.edges.find((item) => item.id === 'e-1')
+    const boostedEdge = boosted.block.graph.edges.find((item) => item.id === 'e-1')
+    expect((boostedEdge?.lastFlowPerTick ?? 0) > (baseEdge?.lastFlowPerTick ?? 0)).toBe(true)
+  })
+
+  it('applies powerEfficiencyMultiplier by reducing power usage', () => {
+    const block = createBaselineBlock()
+    const powerNode = block.graph.nodes.find((node) => node.id === 'n-power')
+    if (powerNode) {
+      powerNode.params.powerPerTick = 0.5
+    }
+
+    const withoutEfficiency = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      recipes,
+    })
+    const withEfficiency = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      powerEfficiencyMultiplier: 2,
+      recipes,
+    })
+
+    const baselineExtractor = withoutEfficiency.block.graph.nodes.find((node) => node.id === 'n-extractor')
+    const boostedExtractor = withEfficiency.block.graph.nodes.find((node) => node.id === 'n-extractor')
+    expect(baselineExtractor?.runtime?.lastStatus).toEqual({
+      kind: 'stalled',
+      reason: 'no_power',
+    })
+    expect(boostedExtractor?.runtime?.lastStatus).toEqual({ kind: 'running' })
+  })
+
+  it('applies entropyGainMultiplier before effective rate calculation', () => {
+    const block = createBaselineBlock()
+
+    const lowEntropyPenalty = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0.2,
+      entropyGainMultiplier: 0.5,
+      recipes,
+    })
+    const highEntropyPenalty = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0.2,
+      entropyGainMultiplier: 2,
+      recipes,
+    })
+
+    expect(lowEntropyPenalty.effectiveRateMultiplier).toBeGreaterThan(
+      highEntropyPenalty.effectiveRateMultiplier
+    )
+  })
 })
 
 function createBaselineBlock(): BlockState {
