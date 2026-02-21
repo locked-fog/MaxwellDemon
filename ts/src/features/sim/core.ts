@@ -13,6 +13,7 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
   const edges = [...nextBlock.graph.edges].sort((a, b) => a.id.localeCompare(b.id))
   nextBlock.graph.nodes = nodes
   nextBlock.graph.edges = edges
+  const unmetDemand: ResourceInventory = {}
 
   const effectiveRateMultiplier = clamp01(1 - config.entropyFactor)
   const extractionBudget = createExtractionBudget(
@@ -80,12 +81,15 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
 
     const runtime = ensureRuntime(node)
     if (node.type === 'port_out') {
-      runPortOut({
+      const portOutResult = runPortOut({
         node,
         runtime,
         block: nextBlock,
         effectiveRateMultiplier,
       })
+      if (portOutResult.shortfall > EPSILON) {
+        addQty(unmetDemand, portOutResult.resourceId, portOutResult.shortfall)
+      }
       continue
     }
 
@@ -104,6 +108,7 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
     powerProduced,
     powerUsed,
     effectiveRateMultiplier,
+    unmetDemand,
   }
 }
 
@@ -262,35 +267,54 @@ interface PortOutContext {
   effectiveRateMultiplier: number
 }
 
-function runPortOut(ctx: PortOutContext): void {
+interface PortOutResult {
+  resourceId: string
+  shortfall: number
+}
+
+function runPortOut(ctx: PortOutContext): PortOutResult {
   const { node, runtime, block, effectiveRateMultiplier } = ctx
 
   const resourceId = readString(node.params.resourceId, '')
   const ratePerTick = positive(readNumber(node.params.ratePerTick, 0)) * effectiveRateMultiplier
   if (resourceId.length === 0 || ratePerTick <= EPSILON) {
     runtime.lastStatus = stalled('no_input')
-    return
-  }
-
-  const available = positive(block.inventory[resourceId] ?? 0)
-  if (available <= EPSILON) {
-    runtime.lastStatus = stalled('no_input')
-    return
+    return { resourceId, shortfall: 0 }
   }
 
   const outputPort = readString(node.params.outputPort, DEFAULT_OUTPUT_PORT)
   const output = getPortInventory(runtime.outputBuf, outputPort)
   const maxOutputBuffer = optionalPositiveNumber(node.params.maxOutputBuffer)
-  const moved = Math.min(available, ratePerTick)
+  const maxBufferSpace =
+    maxOutputBuffer === undefined
+      ? Number.POSITIVE_INFINITY
+      : clampPositive(maxOutputBuffer - totalInventory(output))
+  const targetMove = Math.min(ratePerTick, maxBufferSpace)
 
-  if (maxOutputBuffer !== undefined && totalInventory(output) + moved > maxOutputBuffer + EPSILON) {
+  if (targetMove <= EPSILON) {
     runtime.lastStatus = stalled('output_full')
-    return
+    return { resourceId, shortfall: 0 }
+  }
+
+  const available = positive(block.inventory[resourceId] ?? 0)
+  if (available <= EPSILON) {
+    runtime.lastStatus = stalled('no_input')
+    return { resourceId, shortfall: targetMove }
+  }
+
+  const moved = Math.min(available, targetMove)
+  if (moved <= EPSILON) {
+    runtime.lastStatus = stalled('no_input')
+    return { resourceId, shortfall: targetMove }
   }
 
   addQty(output, resourceId, moved)
   block.inventory[resourceId] = clampPositive(available - moved)
   runtime.lastStatus = running()
+  return {
+    resourceId,
+    shortfall: clampPositive(targetMove - moved),
+  }
 }
 
 interface PortInContext {
