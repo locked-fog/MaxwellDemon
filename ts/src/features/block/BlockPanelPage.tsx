@@ -40,15 +40,6 @@ export function BlockPanelPage() {
         ))}
       </ul>
 
-      <h3>Deposits (Reserve)</h3>
-      <ul>
-        {Object.entries(selectedBlock.deposits).map(([resourceId, qty]) => (
-          <li key={resourceId}>
-            {resourceId}: {formatLarge(qty)}
-          </li>
-        ))}
-      </ul>
-
       <h3>Inventory</h3>
       {Object.keys(selectedBlock.inventory).length === 0 ? (
         <p>Empty</p>
@@ -82,15 +73,4 @@ function formatMetric(value: number): string {
     return `${Math.round(rounded)}`
   }
   return rounded.toFixed(2)
-}
-
-function formatLarge(value: number): string {
-  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
-  if (safe >= 1_000_000) {
-    return `${(safe / 1_000_000).toFixed(2)}M`
-  }
-  if (safe >= 1_000) {
-    return `${(safe / 1_000).toFixed(1)}K`
-  }
-  return formatMetric(safe)
 }

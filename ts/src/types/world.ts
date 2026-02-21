@@ -17,7 +17,6 @@ export interface BlockState {
   capacitySlots: number
   outletCapacityPerTick: number
   extractionRatePerTick: Record<ResourceId, number>
-  deposits: Record<ResourceId, number>
   inventory: ResourceInventory
   graph: GraphState
 }

@@ -28,6 +28,7 @@ export type WorldAction =
   | { type: 'select_block'; blockId: string }
   | { type: 'unlock_block'; blockId: string }
   | { type: 'set_selected_block_graph'; graph: GraphState }
+  | { type: 'replace_world'; world: WorldState; selectedBlockId?: string }
   | { type: 'tick_world'; tickCount?: number; nowUnixMs?: number }
 
 const DEFAULT_MAP_CELL_COUNT = 300
@@ -106,10 +107,38 @@ export function reduceWorldSession(state: WorldSessionState, action: WorldAction
   if (action.type === 'set_selected_block_graph') {
     return setSelectedBlockGraph(state, action.graph)
   }
+  if (action.type === 'replace_world') {
+    return replaceWorld(state, action.world, action.selectedBlockId)
+  }
   if (action.type === 'tick_world') {
     return tickWorld(state, action.tickCount, action.nowUnixMs)
   }
   return state
+}
+
+function replaceWorld(
+  state: WorldSessionState,
+  world: WorldState,
+  selectedBlockId?: string
+): WorldSessionState {
+  const preferredSelectedId = selectedBlockId ?? state.selectedBlockId
+  if (getBlockById(world, preferredSelectedId)) {
+    return { world, selectedBlockId: preferredSelectedId }
+  }
+
+  const unlocked = world.blocks.find((block) => block.unlocked)
+  if (unlocked) {
+    return {
+      world,
+      selectedBlockId: unlocked.id,
+    }
+  }
+
+  const fallback = world.blocks[0]
+  return {
+    world,
+    selectedBlockId: fallback?.id ?? preferredSelectedId,
+  }
 }
 
 export function getBlockById(world: WorldState, blockId: string): BlockState | undefined {
@@ -384,7 +413,6 @@ function createHexMap(targetCellCount: number, mapSeed: number): BlockState[] {
       capacitySlots: 6,
       outletCapacityPerTick: 10,
       extractionRatePerTick: createExtractionRates(terrain, coord, mapSeed),
-      deposits: createDeposits(terrain, coord, mapSeed),
       inventory: {},
       graph: {
         nodes: [],
@@ -563,55 +591,6 @@ function axialToNoisePlane(coord: BlockCoord): [number, number] {
   const x = coord.q + coord.r * 0.5
   const y = coord.r * 0.8660254037844386
   return [x, y]
-}
-
-function createDeposits(
-  terrain: TerrainId,
-  coord: BlockCoord,
-  mapSeed: number
-): Record<string, number> {
-  const distance = hexDistanceFromOrigin(coord)
-  const richness = 0.78 + seededUnit(mapSeed, coord, 17) * 0.92
-  const frontierBonus = 1 + Math.min(0.85, distance * 0.045)
-  const base = roundTo((420 + distance * 115) * richness * frontierBonus * 10000, 2)
-
-  const oreBias = 0.9 + seededUnit(mapSeed, coord, 31) * 0.35
-  const woodBias = 0.9 + seededUnit(mapSeed, coord, 37) * 0.35
-  const waterBias = 0.9 + seededUnit(mapSeed, coord, 43) * 0.35
-
-  switch (terrain) {
-    case 'plains':
-      return {
-        wood: roundTo(base * 1.2 * woodBias, 2),
-        ore: roundTo(base * 0.9 * oreBias, 2),
-        water: roundTo(base * 0.75 * waterBias, 2),
-      }
-    case 'forest':
-      return {
-        wood: roundTo(base * 1.8 * woodBias, 2),
-        water: roundTo(base * 0.95 * waterBias, 2),
-        ore: roundTo(base * 0.68 * oreBias, 2),
-      }
-    case 'mountain':
-      return {
-        ore: roundTo(base * 2.1 * oreBias, 2),
-        stone: roundTo(base * 1.45, 2),
-        water: roundTo(base * 0.4 * waterBias, 2),
-      }
-    case 'water':
-      return {
-        water: roundTo(base * 2.4 * waterBias, 2),
-        ore: roundTo(base * 0.55 * oreBias, 2),
-      }
-    case 'coast':
-      return {
-        water: roundTo(base * 1.45 * waterBias, 2),
-        ore: roundTo(base * 1.05 * oreBias, 2),
-        wood: roundTo(base * 0.92 * woodBias, 2),
-      }
-    default:
-      return { ore: roundTo(base * oreBias, 2) }
-  }
 }
 
 function createExtractionRates(

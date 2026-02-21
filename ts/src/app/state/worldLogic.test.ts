@@ -99,22 +99,22 @@ describe('worldLogic', () => {
     expect(selected?.graph.nodes[0].id).toBe('n_a')
   })
 
-  it('applies high-yield deposits so single block does not deplete in a few days', () => {
+  it('generates meaningful extraction rates for the center block', () => {
     const session = createInitialSession({
       nowUnixMs: 1700000000000,
       mapCellCount: 300,
       mapSeed: 2026,
     })
     const center = session.world.blocks.find((block) => block.id === toBlockId({ q: 0, r: 0 }))
-    const deposits = center?.deposits ?? {}
-    const total = Object.values(deposits).reduce((sum, qty) => sum + qty, 0)
-    const maxSingle = Object.values(deposits).reduce((max, qty) => Math.max(max, qty), 0)
+    const rates = center?.extractionRatePerTick ?? {}
+    const total = Object.values(rates).reduce((sum, qty) => sum + qty, 0)
+    const maxSingle = Object.values(rates).reduce((max, qty) => Math.max(max, qty), 0)
 
-    expect(total).toBeGreaterThan(1_000_000)
-    expect(maxSingle).toBeGreaterThan(400_000)
+    expect(total).toBeGreaterThan(10)
+    expect(maxSingle).toBeGreaterThan(5)
   })
 
-  it('keeps identical deposits with the same mapSeed', () => {
+  it('keeps identical extraction rates with the same mapSeed', () => {
     const left = createInitialSession({
       nowUnixMs: 1700000000000,
       mapCellCount: 300,
@@ -129,7 +129,7 @@ describe('worldLogic', () => {
     const leftCenter = left.world.blocks.find((block) => block.id === toBlockId({ q: 0, r: 0 }))
     const rightCenter = right.world.blocks.find((block) => block.id === toBlockId({ q: 0, r: 0 }))
     expect(rightCenter?.terrain).toBe(leftCenter?.terrain)
-    expect(rightCenter?.deposits).toEqual(leftCenter?.deposits)
+    expect(rightCenter?.extractionRatePerTick).toEqual(leftCenter?.extractionRatePerTick)
   })
 
   it('advances time and writes sim runtime state on tick_world', () => {
