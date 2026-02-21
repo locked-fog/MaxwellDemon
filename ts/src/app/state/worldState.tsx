@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { PropsWithChildren } from 'react'
-import { createContext, useContext, useMemo, useReducer } from 'react'
+import { createContext, useCallback, useContext, useMemo, useReducer } from 'react'
 import type { BlockState, GraphState, WorldState } from '../../types'
 import {
   createInitialSession,
@@ -12,6 +12,7 @@ import {
 
 interface WorldSessionProviderProps extends PropsWithChildren {
   initialMapCellCount?: number
+  initialMapSeed?: number
 }
 
 interface WorldSessionContextValue {
@@ -21,6 +22,7 @@ interface WorldSessionContextValue {
   selectBlock: (blockId: string) => void
   unlockBlock: (blockId: string) => void
   setSelectedBlockGraph: (graph: GraphState) => void
+  tickWorld: (tickCount?: number) => void
   canUnlock: (blockId: string) => boolean
   listNeighbors: (blockId: string) => BlockState[]
 }
@@ -30,9 +32,31 @@ const WorldSessionContext = createContext<WorldSessionContextValue | null>(null)
 export function WorldSessionProvider({
   children,
   initialMapCellCount = 300,
+  initialMapSeed,
 }: WorldSessionProviderProps) {
-  const [session, dispatch] = useReducer(reduceWorldSession, initialMapCellCount, (mapCellCount) =>
-    createInitialSession({ mapCellCount })
+  const [session, dispatch] = useReducer(
+    reduceWorldSession,
+    {
+      mapCellCount: initialMapCellCount,
+      mapSeed: initialMapSeed,
+    },
+    ({ mapCellCount, mapSeed }) => createInitialSession({ mapCellCount, mapSeed })
+  )
+  const selectBlock = useCallback(
+    (blockId: string) => dispatch({ type: 'select_block', blockId }),
+    [dispatch]
+  )
+  const unlockBlock = useCallback(
+    (blockId: string) => dispatch({ type: 'unlock_block', blockId }),
+    [dispatch]
+  )
+  const setSelectedBlockGraph = useCallback(
+    (graph: GraphState) => dispatch({ type: 'set_selected_block_graph', graph }),
+    [dispatch]
+  )
+  const tickWorld = useCallback(
+    (tickCount: number = 1) => dispatch({ type: 'tick_world', tickCount }),
+    [dispatch]
   )
 
   const value = useMemo<WorldSessionContextValue>(() => {
@@ -42,14 +66,14 @@ export function WorldSessionProvider({
       world: session.world,
       selectedBlockId: session.selectedBlockId,
       selectedBlock,
-      selectBlock: (blockId: string) => dispatch({ type: 'select_block', blockId }),
-      unlockBlock: (blockId: string) => dispatch({ type: 'unlock_block', blockId }),
-      setSelectedBlockGraph: (graph: GraphState) =>
-        dispatch({ type: 'set_selected_block_graph', graph }),
+      selectBlock,
+      unlockBlock,
+      setSelectedBlockGraph,
+      tickWorld,
       canUnlock: (blockId: string) => isBlockUnlockable(session.world, blockId),
       listNeighbors: (blockId: string) => listNeighborBlocks(session.world, blockId),
     }
-  }, [session])
+  }, [session, selectBlock, unlockBlock, setSelectedBlockGraph, tickWorld])
 
   return <WorldSessionContext.Provider value={value}>{children}</WorldSessionContext.Provider>
 }

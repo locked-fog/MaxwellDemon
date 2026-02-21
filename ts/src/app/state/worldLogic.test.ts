@@ -17,6 +17,8 @@ describe('worldLogic', () => {
     const center = session.world.blocks.find((block) => block.id === centerId)
 
     expect(session.world.blocks).toHaveLength(300)
+    expect(session.world.mapCellCount).toBe(300)
+    expect(session.world.mapSeed).toBe(2026)
     expect(session.selectedBlockId).toBe(centerId)
     expect(center?.unlocked).toBe(true)
     expect(session.world.saveVersion).toBe(1)
@@ -95,4 +97,148 @@ describe('worldLogic', () => {
     expect(selected?.graph.nodes).toHaveLength(1)
     expect(selected?.graph.nodes[0].id).toBe('n_a')
   })
+
+  it('applies high-yield deposits so single block does not deplete in a few days', () => {
+    const session = createInitialSession({
+      nowUnixMs: 1700000000000,
+      mapCellCount: 300,
+      mapSeed: 2026,
+    })
+    const center = session.world.blocks.find((block) => block.id === toBlockId({ q: 0, r: 0 }))
+    const deposits = center?.deposits ?? {}
+    const total = Object.values(deposits).reduce((sum, qty) => sum + qty, 0)
+    const maxSingle = Object.values(deposits).reduce((max, qty) => Math.max(max, qty), 0)
+
+    expect(total).toBeGreaterThan(1_000_000)
+    expect(maxSingle).toBeGreaterThan(400_000)
+  })
+
+  it('keeps identical deposits with the same mapSeed', () => {
+    const left = createInitialSession({
+      nowUnixMs: 1700000000000,
+      mapCellCount: 300,
+      mapSeed: 10101,
+    })
+    const right = createInitialSession({
+      nowUnixMs: 1700000000000,
+      mapCellCount: 300,
+      mapSeed: 10101,
+    })
+
+    const leftCenter = left.world.blocks.find((block) => block.id === toBlockId({ q: 0, r: 0 }))
+    const rightCenter = right.world.blocks.find((block) => block.id === toBlockId({ q: 0, r: 0 }))
+    expect(rightCenter?.terrain).toBe(leftCenter?.terrain)
+    expect(rightCenter?.deposits).toEqual(leftCenter?.deposits)
+  })
+
+  it('advances time and writes sim runtime state on tick_world', () => {
+    const session = createInitialSession({
+      nowUnixMs: 1700000000000,
+      mapCellCount: 300,
+      noiseSeed: 2026,
+    })
+    const withGraph = reduceWorldSession(session, {
+      type: 'set_selected_block_graph',
+      graph: createTickGraph(),
+    })
+
+    const next = reduceWorldSession(withGraph, {
+      type: 'tick_world',
+      tickCount: 1,
+      nowUnixMs: 1700000001234,
+    })
+
+    const selected = next.world.blocks.find((block) => block.id === next.selectedBlockId)
+    const extractor = selected?.graph.nodes.find((node) => node.id === 'n_extractor')
+    const storage = selected?.graph.nodes.find((node) => node.id === 'n_storage')
+    const edge = selected?.graph.edges.find((item) => item.id === 'e_ore')
+
+    expect(next.world.time.tick).toBe(withGraph.world.time.tick + 1)
+    expect(next.world.time.day).toBeCloseTo(withGraph.world.time.day + withGraph.world.time.tickDays, 6)
+    expect(next.world.time.realTimestampMs).toBe(1700000001234)
+    expect(extractor?.runtime?.lastStatus).toEqual({ kind: 'running' })
+    expect(readQty(storage?.runtime?.inputBuf.in.ore)).toBeCloseTo(2, 6)
+    expect(edge?.lastFlowPerTick).toBeCloseTo(2, 6)
+  })
+
+  it('keeps deterministic world state for identical tick sequences', () => {
+    const leftSession = createInitialSession({
+      nowUnixMs: 1700000000000,
+      mapCellCount: 300,
+      noiseSeed: 2026,
+    })
+    const rightSession = createInitialSession({
+      nowUnixMs: 1700000000000,
+      mapCellCount: 300,
+      noiseSeed: 2026,
+    })
+
+    let left = reduceWorldSession(leftSession, {
+      type: 'set_selected_block_graph',
+      graph: createTickGraph(),
+    })
+    let right = reduceWorldSession(rightSession, {
+      type: 'set_selected_block_graph',
+      graph: createTickGraph(),
+    })
+
+    const times = [1700000001111, 1700000002222, 1700000003333]
+    for (const nowUnixMs of times) {
+      left = reduceWorldSession(left, { type: 'tick_world', nowUnixMs })
+      right = reduceWorldSession(right, { type: 'tick_world', nowUnixMs })
+    }
+
+    expect(right).toEqual(left)
+  })
 })
+
+function createTickGraph() {
+  return {
+    nodes: [
+      {
+        id: 'n_power',
+        type: 'power_gen' as const,
+        x: 10,
+        y: 20,
+        params: { powerPerTick: 10 },
+        enabled: true,
+      },
+      {
+        id: 'n_extractor',
+        type: 'extractor' as const,
+        x: 80,
+        y: 20,
+        params: {
+          resourceId: 'ore',
+          ratePerTick: 2,
+          powerPerTick: 1,
+          outputPort: 'out',
+        },
+        enabled: true,
+      },
+      {
+        id: 'n_storage',
+        type: 'storage' as const,
+        x: 140,
+        y: 20,
+        params: {},
+        enabled: true,
+      },
+    ],
+    edges: [
+      {
+        id: 'e_ore',
+        kind: 'item' as const,
+        fromNodeId: 'n_extractor',
+        fromPort: 'out',
+        toNodeId: 'n_storage',
+        toPort: 'in',
+        capacityPerTick: 10,
+      },
+    ],
+  }
+}
+
+function readQty(value: number | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}

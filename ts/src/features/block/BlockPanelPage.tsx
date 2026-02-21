@@ -31,11 +31,20 @@ export function BlockPanelPage() {
         </button>
       ) : null}
 
-      <h3>Deposits</h3>
+      <h3>Extraction Rate / Tick</h3>
+      <ul>
+        {Object.entries(selectedBlock.extractionRatePerTick).map(([resourceId, qty]) => (
+          <li key={resourceId}>
+            {resourceId}: {formatMetric(qty)}
+          </li>
+        ))}
+      </ul>
+
+      <h3>Deposits (Reserve)</h3>
       <ul>
         {Object.entries(selectedBlock.deposits).map(([resourceId, qty]) => (
           <li key={resourceId}>
-            {resourceId}: {qty.toFixed(2)}
+            {resourceId}: {formatLarge(qty)}
           </li>
         ))}
       </ul>
@@ -47,7 +56,7 @@ export function BlockPanelPage() {
         <ul>
           {Object.entries(selectedBlock.inventory).map(([resourceId, qty]) => (
             <li key={resourceId}>
-              {resourceId}: {qty.toFixed(2)}
+              {resourceId}: {formatMetric(qty)}
             </li>
           ))}
         </ul>
@@ -64,4 +73,24 @@ export function BlockPanelPage() {
       </ul>
     </PageCard>
   )
+}
+
+function formatMetric(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
+  const rounded = Math.round(safe * 100) / 100
+  if (Math.abs(rounded - Math.round(rounded)) < 1e-9) {
+    return `${Math.round(rounded)}`
+  }
+  return rounded.toFixed(2)
+}
+
+function formatLarge(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
+  if (safe >= 1_000_000) {
+    return `${(safe / 1_000_000).toFixed(2)}M`
+  }
+  if (safe >= 1_000) {
+    return `${(safe / 1_000).toFixed(1)}K`
+  }
+  return formatMetric(safe)
 }

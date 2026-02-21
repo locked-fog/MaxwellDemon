@@ -93,6 +93,52 @@ describe('stepBlock', () => {
 
     expect(right).toEqual(left)
   })
+
+  it('applies per-block extraction rate cap per tick', () => {
+    const block = createBaselineBlock()
+    block.extractionRatePerTick.ore = 1.5
+    const extractor = block.graph.nodes.find((node) => node.id === 'n-extractor')
+    if (extractor) {
+      extractor.params.ratePerTick = 10
+    }
+
+    const result = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      recipes,
+    })
+
+    const edge = result.block.graph.edges.find((item) => item.id === 'e-1')
+    expect(edge?.lastFlowPerTick).toBeCloseTo(1.5, 6)
+  })
+
+  it('runs port inventory interaction after edge transfer in the same tick', () => {
+    const block = createPortOrderBlock()
+
+    const first = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      recipes,
+    })
+    const second = stepBlock(first.block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      recipes,
+    })
+
+    const edgeAfterFirst = first.block.graph.edges.find((item) => item.id === 'e-port')
+    const edgeAfterSecond = second.block.graph.edges.find((item) => item.id === 'e-port')
+    const portInAfterFirst = first.block.graph.nodes.find((node) => node.id === 'n-port-in')
+    const portInAfterSecond = second.block.graph.nodes.find((node) => node.id === 'n-port-in')
+
+    expect(edgeAfterFirst?.lastFlowPerTick ?? 0).toBeCloseTo(0, 6)
+    expect(edgeAfterSecond?.lastFlowPerTick ?? 0).toBeCloseTo(2, 6)
+    expect(portInAfterFirst?.runtime?.lastStatus).toEqual({
+      kind: 'stalled',
+      reason: 'no_input',
+    })
+    expect(portInAfterSecond?.runtime?.lastStatus).toEqual({ kind: 'running' })
+  })
 })
 
 function createBaselineBlock(): BlockState {
@@ -103,6 +149,7 @@ function createBaselineBlock(): BlockState {
     unlocked: true,
     capacitySlots: 10,
     outletCapacityPerTick: 20,
+    extractionRatePerTick: { ore: 2 },
     deposits: { ore: 20 },
     inventory: {},
     graph: {
@@ -170,6 +217,58 @@ function createBaselineBlock(): BlockState {
           toNodeId: 'n-processor',
           toPort: 'in',
           capacityPerTick: 20,
+        },
+      ],
+    },
+  }
+}
+
+function createPortOrderBlock(): BlockState {
+  return {
+    id: 'block-port',
+    coord: { q: 0, r: 0 },
+    terrain: 'plains',
+    unlocked: true,
+    capacitySlots: 10,
+    outletCapacityPerTick: 20,
+    extractionRatePerTick: {},
+    deposits: {},
+    inventory: { ore: 5 },
+    graph: {
+      nodes: [
+        {
+          id: 'n-port-out',
+          type: 'port_out',
+          x: 20,
+          y: 20,
+          params: {
+            outputPort: 'out',
+            resourceId: 'ore',
+            ratePerTick: 2,
+          },
+          enabled: true,
+        },
+        {
+          id: 'n-port-in',
+          type: 'port_in',
+          x: 140,
+          y: 20,
+          params: {
+            inputPort: 'in',
+            ratePerTick: 10,
+          },
+          enabled: true,
+        },
+      ],
+      edges: [
+        {
+          id: 'e-port',
+          kind: 'item',
+          fromNodeId: 'n-port-out',
+          fromPort: 'out',
+          toNodeId: 'n-port-in',
+          toPort: 'in',
+          capacityPerTick: 10,
         },
       ],
     },

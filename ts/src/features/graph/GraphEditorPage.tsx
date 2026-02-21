@@ -580,6 +580,19 @@ export function GraphEditorPage() {
         </section>
 
         <aside className="graph-side-card">
+          <h3>Block</h3>
+          <div className="graph-selection-group">
+            <p>ID: {selectedBlock.id}</p>
+            <p>
+              Coord: ({selectedBlock.coord.q}, {selectedBlock.coord.r})
+            </p>
+            <p>Terrain: {selectedBlock.terrain}</p>
+            <p>Slots: {selectedBlock.capacitySlots}</p>
+            <p>Outlet cap/tick: {formatMetric(selectedBlock.outletCapacityPerTick)}</p>
+            <p>Yield sum/tick: {formatMetric(sumValues(selectedBlock.extractionRatePerTick))}</p>
+            <p>Reserve sum: {formatLarge(sumValues(selectedBlock.deposits))}</p>
+          </div>
+
           <h3>Selection</h3>
 
           {selectedNode ? (
@@ -727,33 +740,44 @@ function toFlowNodes(nodes: NodeInstance[]): FlowNode[] {
 }
 
 function toFlowEdges(edges: EdgeInstance[]): Edge[] {
-  return edges.map((edge) => ({
-    id: edge.id,
-    source: edge.fromNodeId,
-    sourceHandle: edge.fromPort,
-    target: edge.toNodeId,
-    targetHandle: edge.toPort,
-    label: `${formatMetric(edge.lastFlowPerTick ?? 0)} / ${formatMetric(edge.capacityPerTick)}`,
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      color: '#78b7e5',
-    },
-    animated: (edge.lastFlowPerTick ?? 0) > 0,
-    style: {
-      stroke: '#78b7e5',
-      strokeWidth: 2,
-    },
-    labelShowBg: true,
-    labelBgStyle: {
-      fill: '#112238',
-      fillOpacity: 0.92,
-    },
-    labelStyle: {
-      fill: '#dce9f6',
-      fontSize: 11,
-      fontWeight: 600,
-    },
-  }))
+  return edges.map((edge) => {
+    const flow = clampPositive(edge.lastFlowPerTick ?? 0)
+    const capacity = clampPositive(edge.capacityPerTick)
+    const loadRatio = capacity > 0 ? clamp01(flow / capacity) : 0
+    const isActive = flow > 0
+    const strokeColor = isActive ? '#89d8ff' : '#5f87ad'
+    const markerColor = isActive ? '#8de3ff' : '#7ea6cb'
+
+    return {
+      id: edge.id,
+      source: edge.fromNodeId,
+      sourceHandle: edge.fromPort,
+      target: edge.toNodeId,
+      targetHandle: edge.toPort,
+      label: `${formatMetric(flow)} / ${formatMetric(capacity)} (${Math.round(loadRatio * 100)}%)`,
+      className: isActive ? 'flow-edge active' : 'flow-edge',
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: markerColor,
+      },
+      animated: isActive,
+      style: {
+        stroke: strokeColor,
+        strokeWidth: 1.7 + loadRatio * 2.1,
+        opacity: 0.6 + loadRatio * 0.4,
+      },
+      labelShowBg: true,
+      labelBgStyle: {
+        fill: '#112238',
+        fillOpacity: 0.92,
+      },
+      labelStyle: {
+        fill: '#dce9f6',
+        fontSize: 11,
+        fontWeight: 600,
+      },
+    }
+  })
 }
 
 function mapFlowNodesToDomain(flowNodes: FlowNode[], sourceNodes: NodeInstance[]): NodeInstance[] {
@@ -886,6 +910,44 @@ function handleTopPercent(index: number, total: number): string {
 
 function isNodeTypeId(value: string): value is NodeTypeId {
   return NODE_TYPES.includes(value as NodeTypeId)
+}
+
+function clampPositive(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0
+  }
+  return value
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0
+  }
+  if (value >= 1) {
+    return 1
+  }
+  return value
+}
+
+function sumValues(values: Record<string, number>): number {
+  let total = 0
+  for (const qty of Object.values(values)) {
+    if (Number.isFinite(qty)) {
+      total += qty
+    }
+  }
+  return total
+}
+
+function formatLarge(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
+  if (safe >= 1_000_000) {
+    return `${(safe / 1_000_000).toFixed(2)}M`
+  }
+  if (safe >= 1_000) {
+    return `${(safe / 1_000).toFixed(1)}K`
+  }
+  return formatMetric(safe)
 }
 
 function resolveMiniMapNodeColor(node: Node): string {

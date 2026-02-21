@@ -100,11 +100,27 @@
 .graph-canvas .react-flow__edge-path {
   stroke: #78b7e5;
   stroke-width: 2px;
+  transition:
+    stroke 140ms ease,
+    stroke-width 140ms ease,
+    opacity 140ms ease;
+}
+
+.graph-canvas .react-flow__edge.flow-edge.active .react-flow__edge-path {
+  stroke-dasharray: 10 8;
+  animation:
+    edge-stream 0.9s linear infinite,
+    edge-glow 1.25s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(112, 214, 255, 0.5));
 }
 
 .graph-canvas .react-flow__edge.selected .react-flow__edge-path {
   stroke: #f7c45e;
   stroke-width: 2.4px;
+}
+
+.graph-canvas .react-flow__edge.flow-edge.active .react-flow__edge-text {
+  fill: #bfefff;
 }
 
 .graph-canvas .react-flow__edge-textbg {
@@ -294,5 +310,21 @@
 
   .graph-toolbar {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes edge-stream {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+@keyframes edge-glow {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
   }
 }
