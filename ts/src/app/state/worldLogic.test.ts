@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { WorldSessionState } from './worldLogic'
 import {
   createInitialSession,
   isBlockUnlockable,
@@ -190,7 +191,168 @@ describe('worldLogic', () => {
 
     expect(right).toEqual(left)
   })
+
+  it('keeps deterministic cross-block logistics with identical tick inputs', () => {
+    let left = createCrossBlockSession({
+      centerDemandPerTick: 5,
+      eastInventoryOre: 30,
+      eastOutletCapacityPerTick: 4,
+      unlockNortheast: true,
+      northeastInventoryOre: 30,
+      northeastOutletCapacityPerTick: 4,
+    })
+    let right = createCrossBlockSession({
+      centerDemandPerTick: 5,
+      eastInventoryOre: 30,
+      eastOutletCapacityPerTick: 4,
+      unlockNortheast: true,
+      northeastInventoryOre: 30,
+      northeastOutletCapacityPerTick: 4,
+    })
+
+    for (const nowUnixMs of [1700000001111, 1700000002222, 1700000003333]) {
+      left = reduceWorldSession(left, { type: 'tick_world', nowUnixMs })
+      right = reduceWorldSession(right, { type: 'tick_world', nowUnixMs })
+    }
+
+    expect(right).toEqual(left)
+  })
+
+  it('allocates cross-block imports with clockwise neighbor priority', () => {
+    const centerId = toBlockId({ q: 0, r: 0 })
+    const eastId = toBlockId({ q: 1, r: 0 })
+    const northeastId = toBlockId({ q: 1, r: -1 })
+    const session = createCrossBlockSession({
+      centerDemandPerTick: 5,
+      eastInventoryOre: 1,
+      eastOutletCapacityPerTick: 10,
+      unlockNortheast: true,
+      northeastInventoryOre: 10,
+      northeastOutletCapacityPerTick: 10,
+    })
+
+    const next = reduceWorldSession(session, {
+      type: 'tick_world',
+      tickCount: 1,
+      nowUnixMs: 1700000001234,
+    })
+
+    expect(readBlockInventory(next, centerId, 'ore')).toBeCloseTo(5, 6)
+    expect(readBlockInventory(next, eastId, 'ore')).toBeCloseTo(0, 6)
+    expect(readBlockInventory(next, northeastId, 'ore')).toBeCloseTo(6, 6)
+  })
+
+  it('respects outletCapacityPerTick when exporting to neighboring blocks', () => {
+    const centerId = toBlockId({ q: 0, r: 0 })
+    const eastId = toBlockId({ q: 1, r: 0 })
+    const session = createCrossBlockSession({
+      centerDemandPerTick: 9,
+      eastInventoryOre: 20,
+      eastOutletCapacityPerTick: 2,
+      unlockNortheast: false,
+    })
+
+    const next = reduceWorldSession(session, {
+      type: 'tick_world',
+      tickCount: 1,
+      nowUnixMs: 1700000001234,
+    })
+
+    expect(readBlockInventory(next, centerId, 'ore')).toBeCloseTo(2, 6)
+    expect(readBlockInventory(next, eastId, 'ore')).toBeCloseTo(18, 6)
+  })
 })
+
+interface CrossBlockSessionOptions {
+  centerDemandPerTick: number
+  eastInventoryOre: number
+  eastOutletCapacityPerTick: number
+  unlockNortheast: boolean
+  northeastInventoryOre?: number
+  northeastOutletCapacityPerTick?: number
+}
+
+function createCrossBlockSession(options: CrossBlockSessionOptions): WorldSessionState {
+  const base = createInitialSession({
+    nowUnixMs: 1700000000000,
+    mapCellCount: 300,
+    mapSeed: 2026,
+  })
+  const centerId = toBlockId({ q: 0, r: 0 })
+  const eastId = toBlockId({ q: 1, r: 0 })
+  const northeastId = toBlockId({ q: 1, r: -1 })
+
+  const blocks = base.world.blocks.map((block) => {
+    if (block.id === centerId) {
+      return {
+        ...block,
+        unlocked: true,
+        inventory: {},
+        graph: createCrossBlockDemandGraph(options.centerDemandPerTick),
+      }
+    }
+
+    if (block.id === eastId) {
+      return {
+        ...block,
+        unlocked: true,
+        outletCapacityPerTick: options.eastOutletCapacityPerTick,
+        inventory: { ore: options.eastInventoryOre },
+        graph: { nodes: [], edges: [] },
+      }
+    }
+
+    if (block.id === northeastId) {
+      return {
+        ...block,
+        unlocked: options.unlockNortheast,
+        outletCapacityPerTick:
+          options.northeastOutletCapacityPerTick ?? block.outletCapacityPerTick,
+        inventory: { ore: options.northeastInventoryOre ?? 0 },
+        graph: { nodes: [], edges: [] },
+      }
+    }
+
+    return block
+  })
+
+  return {
+    ...base,
+    world: {
+      ...base.world,
+      blocks,
+    },
+  }
+}
+
+function createCrossBlockDemandGraph(ratePerTick: number) {
+  return {
+    nodes: [
+      {
+        id: 'n-demand-port-out',
+        type: 'port_out' as const,
+        x: 20,
+        y: 20,
+        params: {
+          resourceId: 'ore',
+          ratePerTick,
+          outputPort: 'out',
+        },
+        enabled: true,
+      },
+    ],
+    edges: [],
+  }
+}
+
+function readBlockInventory(
+  session: WorldSessionState,
+  blockId: string,
+  resourceId: string
+): number {
+  const block = session.world.blocks.find((item) => item.id === blockId)
+  return readQty(block?.inventory[resourceId])
+}
 
 function createTickGraph() {
   return {

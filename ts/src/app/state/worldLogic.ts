@@ -36,6 +36,7 @@ const MAX_MAP_CELL_COUNT = 3000
 const MAX_MAP_SEED = 2147483647
 const DEFAULT_TICK_COUNT = 1
 const MAX_TICK_COUNT = 600
+const EPSILON = 1e-9
 const RECIPES_BY_ID = createRecipeMap(recipesJson as RecipeDef[])
 
 export function createInitialWorld(options: CreateSessionOptions = {}): WorldState {
@@ -273,7 +274,8 @@ function tickWorldOnce(world: WorldState): WorldState {
     simByBlockId.set(block.id, result.block)
   }
 
-  const nextBlocks = world.blocks.map((block) => simByBlockId.get(block.id) ?? block)
+  const steppedBlocks = world.blocks.map((block) => simByBlockId.get(block.id) ?? block)
+  const nextBlocks = applyCrossBlockLogistics(steppedBlocks, world.macro.macroEntropy)
   const nextTick = world.time.tick + 1
   const nextDay = roundTo(world.time.day + world.time.tickDays, 6)
 
@@ -286,6 +288,115 @@ function tickWorldOnce(world: WorldState): WorldState {
       day: nextDay,
     },
   }
+}
+
+function applyCrossBlockLogistics(blocks: BlockState[], entropyFactor: number): BlockState[] {
+  const byCoord = createBlockCoordMap(blocks)
+  const sortedUnlocked = blocks
+    .filter((block) => block.unlocked)
+    .sort((a, b) => a.id.localeCompare(b.id))
+  const effectiveRateMultiplier = clamp01(1 - entropyFactor)
+  const outletBudgetByBlockId = new Map<string, number>()
+
+  for (const block of sortedUnlocked) {
+    outletBudgetByBlockId.set(block.id, positive(block.outletCapacityPerTick))
+  }
+
+  for (const consumer of sortedUnlocked) {
+    const demandByResource = collectCrossBlockDemand(consumer, effectiveRateMultiplier)
+    const resourceIds = Object.keys(demandByResource).sort()
+    if (resourceIds.length === 0) {
+      continue
+    }
+
+    const neighbors = getClockwiseUnlockedNeighbors(byCoord, consumer.coord)
+    for (const resourceId of resourceIds) {
+      let remainingDemand = positive(demandByResource[resourceId] ?? 0)
+      if (remainingDemand <= EPSILON) {
+        continue
+      }
+
+      for (const supplier of neighbors) {
+        const outletBudget = positive(outletBudgetByBlockId.get(supplier.id) ?? 0)
+        if (outletBudget <= EPSILON) {
+          continue
+        }
+
+        const available = positive(supplier.inventory[resourceId] ?? 0)
+        if (available <= EPSILON) {
+          continue
+        }
+
+        const moved = Math.min(remainingDemand, outletBudget, available)
+        if (moved <= EPSILON) {
+          continue
+        }
+
+        supplier.inventory[resourceId] = clampPositive(available - moved)
+        consumer.inventory[resourceId] = positive(consumer.inventory[resourceId] ?? 0) + moved
+        outletBudgetByBlockId.set(supplier.id, clampPositive(outletBudget - moved))
+        remainingDemand = clampPositive(remainingDemand - moved)
+
+        if (remainingDemand <= EPSILON) {
+          break
+        }
+      }
+    }
+  }
+
+  return blocks
+}
+
+function collectCrossBlockDemand(
+  block: BlockState,
+  effectiveRateMultiplier: number
+): Record<string, number> {
+  const requestedByResource: Record<string, number> = {}
+
+  for (const node of block.graph.nodes) {
+    if (!node.enabled || node.type !== 'port_out') {
+      continue
+    }
+
+    const resourceId = readString(node.params.resourceId)
+    if (resourceId.length === 0) {
+      continue
+    }
+
+    const requested = positive(readNumber(node.params.ratePerTick) * effectiveRateMultiplier)
+    if (requested <= EPSILON) {
+      continue
+    }
+
+    requestedByResource[resourceId] = positive(requestedByResource[resourceId] ?? 0) + requested
+  }
+
+  const demandByResource: Record<string, number> = {}
+  for (const [resourceId, requested] of Object.entries(requestedByResource)) {
+    const localInventory = positive(block.inventory[resourceId] ?? 0)
+    const shortfall = requested - localInventory
+    if (shortfall > EPSILON) {
+      demandByResource[resourceId] = shortfall
+    }
+  }
+
+  return demandByResource
+}
+
+function getClockwiseUnlockedNeighbors(
+  byCoord: Map<string, BlockState>,
+  coord: BlockCoord
+): BlockState[] {
+  const neighbors: BlockState[] = []
+
+  for (const neighborCoord of getNeighborCoords(coord)) {
+    const neighbor = byCoord.get(toCoordKey(neighborCoord))
+    if (neighbor?.unlocked) {
+      neighbors.push(neighbor)
+    }
+  }
+
+  return neighbors
 }
 
 function createHexMap(targetCellCount: number, mapSeed: number): BlockState[] {
@@ -654,6 +765,32 @@ function createRecipeMap(recipes: RecipeDef[]): Record<string, RecipeDef> {
 function roundTo(value: number, precision: number): number {
   const scale = 10 ** precision
   return Math.round(value * scale) / scale
+}
+
+function readString(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
+function readNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function positive(value: number): number {
+  return value > EPSILON ? value : 0
+}
+
+function clampPositive(value: number): number {
+  return value > EPSILON ? value : 0
+}
+
+function clamp01(value: number): number {
+  if (value <= 0) {
+    return 0
+  }
+  if (value >= 1) {
+    return 1
+  }
+  return value
 }
 
 function seededUnit(mapSeed: number, coord: BlockCoord, channel: number): number {
