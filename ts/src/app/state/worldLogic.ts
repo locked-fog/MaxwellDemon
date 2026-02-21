@@ -260,6 +260,7 @@ function tickWorld(
 
 function tickWorldOnce(world: WorldState): WorldState {
   const simByBlockId = new Map<string, BlockState>()
+  const unmetDemandByBlockId = new Map<string, Record<string, number>>()
   const sortedBlocks = [...world.blocks].sort((a, b) => a.id.localeCompare(b.id))
 
   for (const block of sortedBlocks) {
@@ -272,10 +273,11 @@ function tickWorldOnce(world: WorldState): WorldState {
       recipes: RECIPES_BY_ID,
     })
     simByBlockId.set(block.id, result.block)
+    unmetDemandByBlockId.set(block.id, result.unmetDemand)
   }
 
   const steppedBlocks = world.blocks.map((block) => simByBlockId.get(block.id) ?? block)
-  const nextBlocks = applyCrossBlockLogistics(steppedBlocks, world.macro.macroEntropy)
+  const nextBlocks = applyCrossBlockLogistics(steppedBlocks, unmetDemandByBlockId)
   const nextTick = world.time.tick + 1
   const nextDay = roundTo(world.time.day + world.time.tickDays, 6)
 
@@ -290,12 +292,14 @@ function tickWorldOnce(world: WorldState): WorldState {
   }
 }
 
-function applyCrossBlockLogistics(blocks: BlockState[], entropyFactor: number): BlockState[] {
+function applyCrossBlockLogistics(
+  blocks: BlockState[],
+  unmetDemandByBlockId: Map<string, Record<string, number>>
+): BlockState[] {
   const byCoord = createBlockCoordMap(blocks)
   const sortedUnlocked = blocks
     .filter((block) => block.unlocked)
     .sort((a, b) => a.id.localeCompare(b.id))
-  const effectiveRateMultiplier = clamp01(1 - entropyFactor)
   const outletBudgetByBlockId = new Map<string, number>()
 
   for (const block of sortedUnlocked) {
@@ -303,7 +307,10 @@ function applyCrossBlockLogistics(blocks: BlockState[], entropyFactor: number): 
   }
 
   for (const consumer of sortedUnlocked) {
-    const demandByResource = collectCrossBlockDemand(consumer, effectiveRateMultiplier)
+    const demandByResource = unmetDemandByBlockId.get(consumer.id)
+    if (!demandByResource) {
+      continue
+    }
     const resourceIds = Object.keys(demandByResource).sort()
     if (resourceIds.length === 0) {
       continue
@@ -345,42 +352,6 @@ function applyCrossBlockLogistics(blocks: BlockState[], entropyFactor: number): 
   }
 
   return blocks
-}
-
-function collectCrossBlockDemand(
-  block: BlockState,
-  effectiveRateMultiplier: number
-): Record<string, number> {
-  const requestedByResource: Record<string, number> = {}
-
-  for (const node of block.graph.nodes) {
-    if (!node.enabled || node.type !== 'port_out') {
-      continue
-    }
-
-    const resourceId = readString(node.params.resourceId)
-    if (resourceId.length === 0) {
-      continue
-    }
-
-    const requested = positive(readNumber(node.params.ratePerTick) * effectiveRateMultiplier)
-    if (requested <= EPSILON) {
-      continue
-    }
-
-    requestedByResource[resourceId] = positive(requestedByResource[resourceId] ?? 0) + requested
-  }
-
-  const demandByResource: Record<string, number> = {}
-  for (const [resourceId, requested] of Object.entries(requestedByResource)) {
-    const localInventory = positive(block.inventory[resourceId] ?? 0)
-    const shortfall = requested - localInventory
-    if (shortfall > EPSILON) {
-      demandByResource[resourceId] = shortfall
-    }
-  }
-
-  return demandByResource
 }
 
 function getClockwiseUnlockedNeighbors(
@@ -767,30 +738,12 @@ function roundTo(value: number, precision: number): number {
   return Math.round(value * scale) / scale
 }
 
-function readString(value: unknown): string {
-  return typeof value === 'string' ? value : ''
-}
-
-function readNumber(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0
-}
-
 function positive(value: number): number {
   return value > EPSILON ? value : 0
 }
 
 function clampPositive(value: number): number {
   return value > EPSILON ? value : 0
-}
-
-function clamp01(value: number): number {
-  if (value <= 0) {
-    return 0
-  }
-  if (value >= 1) {
-    return 1
-  }
-  return value
 }
 
 function seededUnit(mapSeed: number, coord: BlockCoord, channel: number): number {

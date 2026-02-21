@@ -139,6 +139,31 @@ describe('stepBlock', () => {
     })
     expect(portInAfterSecond?.runtime?.lastStatus).toEqual({ kind: 'running' })
   })
+
+  it('returns unmetDemand based on actual port_out inventory shortfall', () => {
+    const block = createPortDemandBlock()
+
+    const result = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      recipes,
+    })
+
+    expect(result.unmetDemand.ore).toBeCloseTo(3, 6)
+    expect(result.unmetDemand.wood).toBeCloseTo(2, 6)
+  })
+
+  it('does not report unmetDemand when port_out is fully blocked by output buffer', () => {
+    const block = createBufferLimitedPortDemandBlock()
+
+    const result = stepBlock(block, {
+      tickDays: 0.1,
+      entropyFactor: 0,
+      recipes,
+    })
+
+    expect(result.unmetDemand.ore ?? 0).toBeCloseTo(0, 6)
+  })
 })
 
 function createBaselineBlock(): BlockState {
@@ -271,6 +296,90 @@ function createPortOrderBlock(): BlockState {
           capacityPerTick: 10,
         },
       ],
+    },
+  }
+}
+
+function createPortDemandBlock(): BlockState {
+  return {
+    id: 'block-demand',
+    coord: { q: 0, r: 0 },
+    terrain: 'plains',
+    unlocked: true,
+    capacitySlots: 10,
+    outletCapacityPerTick: 20,
+    extractionRatePerTick: {},
+    deposits: {},
+    inventory: { ore: 1, wood: 2 },
+    graph: {
+      nodes: [
+        {
+          id: 'n-port-out-ore',
+          type: 'port_out',
+          x: 20,
+          y: 20,
+          params: {
+            outputPort: 'out',
+            resourceId: 'ore',
+            ratePerTick: 4,
+          },
+          enabled: true,
+        },
+        {
+          id: 'n-port-out-wood',
+          type: 'port_out',
+          x: 60,
+          y: 20,
+          params: {
+            outputPort: 'out',
+            resourceId: 'wood',
+            ratePerTick: 4,
+          },
+          enabled: true,
+        },
+      ],
+      edges: [],
+    },
+  }
+}
+
+function createBufferLimitedPortDemandBlock(): BlockState {
+  return {
+    id: 'block-demand-buffer',
+    coord: { q: 0, r: 0 },
+    terrain: 'plains',
+    unlocked: true,
+    capacitySlots: 10,
+    outletCapacityPerTick: 20,
+    extractionRatePerTick: {},
+    deposits: {},
+    inventory: { ore: 10 },
+    graph: {
+      nodes: [
+        {
+          id: 'n-port-out-ore',
+          type: 'port_out',
+          x: 20,
+          y: 20,
+          params: {
+            outputPort: 'out',
+            resourceId: 'ore',
+            ratePerTick: 5,
+            maxOutputBuffer: 1,
+          },
+          enabled: true,
+          runtime: {
+            inputBuf: {},
+            outputBuf: {
+              out: {
+                ore: 1,
+              },
+            },
+            workProgressDays: 0,
+          },
+        },
+      ],
+      edges: [],
     },
   }
 }

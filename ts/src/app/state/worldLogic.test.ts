@@ -261,6 +261,28 @@ describe('worldLogic', () => {
     expect(readBlockInventory(next, centerId, 'ore')).toBeCloseTo(2, 6)
     expect(readBlockInventory(next, eastId, 'ore')).toBeCloseTo(18, 6)
   })
+
+  it('caps total transfer when multiple resources compete for one outlet budget', () => {
+    const centerId = toBlockId({ q: 0, r: 0 })
+    const eastId = toBlockId({ q: 1, r: 0 })
+    const session = createMultiResourceBudgetSession()
+
+    const next = reduceWorldSession(session, {
+      type: 'tick_world',
+      tickCount: 1,
+      nowUnixMs: 1700000001234,
+    })
+
+    const centerOre = readBlockInventory(next, centerId, 'ore')
+    const centerWood = readBlockInventory(next, centerId, 'wood')
+    const movedTotal = centerOre + centerWood
+
+    expect(movedTotal).toBeCloseTo(5, 6)
+    expect(centerOre).toBeCloseTo(5, 6)
+    expect(centerWood).toBeCloseTo(0, 6)
+    expect(readBlockInventory(next, eastId, 'ore')).toBeCloseTo(5, 6)
+    expect(readBlockInventory(next, eastId, 'wood')).toBeCloseTo(10, 6)
+  })
 })
 
 interface CrossBlockSessionOptions {
@@ -336,6 +358,89 @@ function createCrossBlockDemandGraph(ratePerTick: number) {
         params: {
           resourceId: 'ore',
           ratePerTick,
+          outputPort: 'out',
+        },
+        enabled: true,
+      },
+    ],
+    edges: [],
+  }
+}
+
+function createMultiResourceBudgetSession(): WorldSessionState {
+  const base = createInitialSession({
+    nowUnixMs: 1700000000000,
+    mapCellCount: 300,
+    mapSeed: 2026,
+  })
+  const centerId = toBlockId({ q: 0, r: 0 })
+  const eastId = toBlockId({ q: 1, r: 0 })
+  const northeastId = toBlockId({ q: 1, r: -1 })
+
+  const blocks = base.world.blocks.map((block) => {
+    if (block.id === centerId) {
+      return {
+        ...block,
+        unlocked: true,
+        inventory: {},
+        graph: createMultiResourceDemandGraph(),
+      }
+    }
+
+    if (block.id === eastId) {
+      return {
+        ...block,
+        unlocked: true,
+        outletCapacityPerTick: 5,
+        inventory: { ore: 10, wood: 10 },
+        graph: { nodes: [], edges: [] },
+      }
+    }
+
+    if (block.id === northeastId) {
+      return {
+        ...block,
+        unlocked: false,
+        inventory: {},
+        graph: { nodes: [], edges: [] },
+      }
+    }
+
+    return block
+  })
+
+  return {
+    ...base,
+    world: {
+      ...base.world,
+      blocks,
+    },
+  }
+}
+
+function createMultiResourceDemandGraph() {
+  return {
+    nodes: [
+      {
+        id: 'n-demand-port-out-ore',
+        type: 'port_out' as const,
+        x: 20,
+        y: 20,
+        params: {
+          resourceId: 'ore',
+          ratePerTick: 5,
+          outputPort: 'out',
+        },
+        enabled: true,
+      },
+      {
+        id: 'n-demand-port-out-wood',
+        type: 'port_out' as const,
+        x: 60,
+        y: 20,
+        params: {
+          resourceId: 'wood',
+          ratePerTick: 5,
           outputPort: 'out',
         },
         enabled: true,

@@ -1,4 +1,4 @@
-import type { RecipeDef } from '../../types'
+import type { RecipeDef, ResourceInventory } from '../../types'
 import type { BlockState } from '../../types/world'
 
 export interface SimTickConfig {
@@ -18,4 +18,5 @@ export interface SimTickResult {
   powerProduced: number
   powerUsed: number
   effectiveRateMultiplier: number
+  unmetDemand: ResourceInventory
 }
