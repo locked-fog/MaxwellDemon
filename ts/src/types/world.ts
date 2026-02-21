@@ -16,6 +16,7 @@ export interface BlockState {
   unlocked: boolean
   capacitySlots: number
   outletCapacityPerTick: number
+  extractionRatePerTick: Record<ResourceId, number>
   deposits: Record<ResourceId, number>
   inventory: ResourceInventory
   graph: GraphState
@@ -52,6 +53,8 @@ export interface MetaState {
 
 export interface WorldState {
   saveVersion: number
+  mapSeed: number
+  mapCellCount: number
   time: WorldTime
   macro: MacroState
   blocks: BlockState[]

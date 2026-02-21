@@ -1,4 +1,6 @@
-import type { BlockCoord, BlockState, GraphState, TerrainId, WorldState } from '../../types'
+import recipesJson from '../../data/recipes.json'
+import { stepBlock } from '../../features/sim'
+import type { BlockCoord, BlockState, GraphState, RecipeDef, TerrainId, WorldState } from '../../types'
 import { fbm2 } from '../../utils/noise'
 
 const HEX_NEIGHBOR_OFFSETS: ReadonlyArray<BlockCoord> = [
@@ -18,6 +20,7 @@ export interface WorldSessionState {
 export interface CreateSessionOptions {
   mapCellCount?: number
   nowUnixMs?: number
+  mapSeed?: number
   noiseSeed?: number
 }
 
@@ -25,19 +28,28 @@ export type WorldAction =
   | { type: 'select_block'; blockId: string }
   | { type: 'unlock_block'; blockId: string }
   | { type: 'set_selected_block_graph'; graph: GraphState }
+  | { type: 'tick_world'; tickCount?: number; nowUnixMs?: number }
 
 const DEFAULT_MAP_CELL_COUNT = 300
 const MIN_MAP_CELL_COUNT = 91
 const MAX_MAP_CELL_COUNT = 3000
+const MAX_MAP_SEED = 2147483647
+const DEFAULT_TICK_COUNT = 1
+const MAX_TICK_COUNT = 600
+const RECIPES_BY_ID = createRecipeMap(recipesJson as RecipeDef[])
 
 export function createInitialWorld(options: CreateSessionOptions = {}): WorldState {
   const nowUnixMs = options.nowUnixMs ?? Date.now()
   const mapCellCount = clampMapCellCount(options.mapCellCount ?? DEFAULT_MAP_CELL_COUNT)
-  const noiseSeed = options.noiseSeed ?? (Math.floor(nowUnixMs / 1000) % 100000)
-  const blocks = createHexMap(mapCellCount, noiseSeed)
+  const mapSeed = normalizeMapSeed(
+    options.mapSeed ?? options.noiseSeed ?? Math.floor(nowUnixMs / 1000) % 100000
+  )
+  const blocks = createHexMap(mapCellCount, mapSeed)
 
   return {
     saveVersion: 1,
+    mapSeed,
+    mapCellCount,
     time: {
       day: 1,
       tick: 0,
@@ -92,6 +104,9 @@ export function reduceWorldSession(state: WorldSessionState, action: WorldAction
   }
   if (action.type === 'set_selected_block_graph') {
     return setSelectedBlockGraph(state, action.graph)
+  }
+  if (action.type === 'tick_world') {
+    return tickWorld(state, action.tickCount, action.nowUnixMs)
   }
   return state
 }
@@ -215,9 +230,67 @@ function setSelectedBlockGraph(state: WorldSessionState, graph: GraphState): Wor
   }
 }
 
-function createHexMap(targetCellCount: number, noiseSeed: number): BlockState[] {
+function tickWorld(
+  state: WorldSessionState,
+  tickCount: number = DEFAULT_TICK_COUNT,
+  nowUnixMs: number = Date.now()
+): WorldSessionState {
+  const normalizedTickCount = normalizeTickCount(tickCount)
+  if (normalizedTickCount <= 0) {
+    return state
+  }
+
+  let nextWorld = state.world
+  for (let index = 0; index < normalizedTickCount; index += 1) {
+    nextWorld = tickWorldOnce(nextWorld)
+  }
+
+  return {
+    ...state,
+    world: {
+      ...nextWorld,
+      time: {
+        ...nextWorld.time,
+        realTimestampMs: nowUnixMs,
+      },
+    },
+  }
+}
+
+function tickWorldOnce(world: WorldState): WorldState {
+  const simByBlockId = new Map<string, BlockState>()
+  const sortedBlocks = [...world.blocks].sort((a, b) => a.id.localeCompare(b.id))
+
+  for (const block of sortedBlocks) {
+    if (!block.unlocked) {
+      continue
+    }
+    const result = stepBlock(block, {
+      tickDays: world.time.tickDays,
+      entropyFactor: world.macro.macroEntropy,
+      recipes: RECIPES_BY_ID,
+    })
+    simByBlockId.set(block.id, result.block)
+  }
+
+  const nextBlocks = world.blocks.map((block) => simByBlockId.get(block.id) ?? block)
+  const nextTick = world.time.tick + 1
+  const nextDay = roundTo(world.time.day + world.time.tickDays, 6)
+
+  return {
+    ...world,
+    blocks: nextBlocks,
+    time: {
+      ...world.time,
+      tick: nextTick,
+      day: nextDay,
+    },
+  }
+}
+
+function createHexMap(targetCellCount: number, mapSeed: number): BlockState[] {
   const coords = createHexCoords(targetCellCount)
-  const terrainByCoord = createTerrainMap(coords, noiseSeed)
+  const terrainByCoord = createTerrainMap(coords, mapSeed)
 
   return coords.map((coord) => {
     const terrain = terrainByCoord.get(toCoordKey(coord)) ?? 'plains'
@@ -228,7 +301,8 @@ function createHexMap(targetCellCount: number, noiseSeed: number): BlockState[] 
       unlocked: coord.q === 0 && coord.r === 0,
       capacitySlots: 6,
       outletCapacityPerTick: 10,
-      deposits: createDeposits(terrain, coord),
+      extractionRatePerTick: createExtractionRates(terrain, coord, mapSeed),
+      deposits: createDeposits(terrain, coord, mapSeed),
       inventory: {},
       graph: {
         nodes: [],
@@ -409,21 +483,97 @@ function axialToNoisePlane(coord: BlockCoord): [number, number] {
   return [x, y]
 }
 
-function createDeposits(terrain: TerrainId, coord: BlockCoord): Record<string, number> {
-  const base = 26 + Math.abs(coord.q * 5 + coord.r * 9)
+function createDeposits(
+  terrain: TerrainId,
+  coord: BlockCoord,
+  mapSeed: number
+): Record<string, number> {
+  const distance = hexDistanceFromOrigin(coord)
+  const richness = 0.78 + seededUnit(mapSeed, coord, 17) * 0.92
+  const frontierBonus = 1 + Math.min(0.85, distance * 0.045)
+  const base = roundTo((420 + distance * 115) * richness * frontierBonus * 10000, 2)
+
+  const oreBias = 0.9 + seededUnit(mapSeed, coord, 31) * 0.35
+  const woodBias = 0.9 + seededUnit(mapSeed, coord, 37) * 0.35
+  const waterBias = 0.9 + seededUnit(mapSeed, coord, 43) * 0.35
+
   switch (terrain) {
     case 'plains':
-      return { wood: base * 0.9, ore: base * 0.6, water: base * 0.4 }
+      return {
+        wood: roundTo(base * 1.2 * woodBias, 2),
+        ore: roundTo(base * 0.9 * oreBias, 2),
+        water: roundTo(base * 0.75 * waterBias, 2),
+      }
     case 'forest':
-      return { wood: base * 1.4, water: base * 0.6, ore: base * 0.4 }
+      return {
+        wood: roundTo(base * 1.8 * woodBias, 2),
+        water: roundTo(base * 0.95 * waterBias, 2),
+        ore: roundTo(base * 0.68 * oreBias, 2),
+      }
     case 'mountain':
-      return { ore: base * 1.7, stone: base * 1.1, water: base * 0.2 }
+      return {
+        ore: roundTo(base * 2.1 * oreBias, 2),
+        stone: roundTo(base * 1.45, 2),
+        water: roundTo(base * 0.4 * waterBias, 2),
+      }
     case 'water':
-      return { water: base * 1.9, ore: base * 0.3 }
+      return {
+        water: roundTo(base * 2.4 * waterBias, 2),
+        ore: roundTo(base * 0.55 * oreBias, 2),
+      }
     case 'coast':
-      return { water: base * 1.2, ore: base * 0.8, wood: base * 0.6 }
+      return {
+        water: roundTo(base * 1.45 * waterBias, 2),
+        ore: roundTo(base * 1.05 * oreBias, 2),
+        wood: roundTo(base * 0.92 * woodBias, 2),
+      }
     default:
-      return { ore: base * 0.7 }
+      return { ore: roundTo(base * oreBias, 2) }
+  }
+}
+
+function createExtractionRates(
+  terrain: TerrainId,
+  coord: BlockCoord,
+  mapSeed: number
+): Record<string, number> {
+  const distance = hexDistanceFromOrigin(coord)
+  const stability = 0.9 + seededUnit(mapSeed, coord, 53) * 0.6
+  const frontierBonus = 1 + Math.min(0.34, distance * 0.02)
+  const base = roundTo((7 + distance * 0.95) * stability * frontierBonus, 2)
+
+  switch (terrain) {
+    case 'plains':
+      return {
+        wood: roundTo(base * 1.15, 2),
+        ore: roundTo(base * 0.95, 2),
+        water: roundTo(base * 0.9, 2),
+      }
+    case 'forest':
+      return {
+        wood: roundTo(base * 1.4, 2),
+        water: roundTo(base * 1.02, 2),
+        ore: roundTo(base * 0.78, 2),
+      }
+    case 'mountain':
+      return {
+        ore: roundTo(base * 1.6, 2),
+        stone: roundTo(base * 1.25, 2),
+        water: roundTo(base * 0.55, 2),
+      }
+    case 'water':
+      return {
+        water: roundTo(base * 1.85, 2),
+        ore: roundTo(base * 0.7, 2),
+      }
+    case 'coast':
+      return {
+        water: roundTo(base * 1.25, 2),
+        ore: roundTo(base * 1.02, 2),
+        wood: roundTo(base * 0.88, 2),
+      }
+    default:
+      return { ore: roundTo(base, 2) }
   }
 }
 
@@ -462,6 +612,61 @@ function clampMapCellCount(value: number): number {
     return MAX_MAP_CELL_COUNT
   }
   return normalized
+}
+
+function normalizeMapSeed(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 1
+  }
+  const normalized = Math.abs(Math.floor(value))
+  if (normalized === 0) {
+    return 1
+  }
+  if (normalized > MAX_MAP_SEED) {
+    const wrapped = normalized % MAX_MAP_SEED
+    return wrapped === 0 ? 1 : wrapped
+  }
+  return normalized
+}
+
+function normalizeTickCount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_TICK_COUNT
+  }
+  const normalized = Math.floor(value)
+  if (normalized < 0) {
+    return 0
+  }
+  if (normalized > MAX_TICK_COUNT) {
+    return MAX_TICK_COUNT
+  }
+  return normalized
+}
+
+function createRecipeMap(recipes: RecipeDef[]): Record<string, RecipeDef> {
+  const byId: Record<string, RecipeDef> = {}
+  for (const recipe of recipes) {
+    byId[recipe.id] = recipe
+  }
+  return byId
+}
+
+function roundTo(value: number, precision: number): number {
+  const scale = 10 ** precision
+  return Math.round(value * scale) / scale
+}
+
+function seededUnit(mapSeed: number, coord: BlockCoord, channel: number): number {
+  let value = mapSeed >>> 0
+  value ^= Math.imul((coord.q + 1024) >>> 0, 0x9e3779b1)
+  value ^= Math.imul((coord.r + 2048) >>> 0, 0x85ebca6b)
+  value ^= Math.imul((channel + 4096) >>> 0, 0xc2b2ae35)
+  value ^= value >>> 16
+  value = Math.imul(value, 0x7feb352d)
+  value ^= value >>> 15
+  value = Math.imul(value, 0x846ca68b)
+  value ^= value >>> 16
+  return (value >>> 0) / 4294967295
 }
 
 function quantile(values: number[], p: number): number {

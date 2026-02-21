@@ -15,9 +15,14 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
   nextBlock.graph.edges = edges
 
   const effectiveRateMultiplier = clamp01(1 - config.entropyFactor)
+  const extractionBudget = createExtractionBudget(
+    nextBlock.extractionRatePerTick,
+    effectiveRateMultiplier
+  )
   const powerProduced = collectPower(nodes)
   let powerUsed = 0
 
+  // Phase 1: node processing (excluding block inventory ports)
   for (const node of nodes) {
     const runtime = ensureRuntime(node)
 
@@ -38,6 +43,7 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
         block: nextBlock,
         powerProduced,
         powerUsed,
+        extractionBudget,
         effectiveRateMultiplier,
       })
       continue
@@ -56,6 +62,23 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
       continue
     }
 
+    if (node.type === 'port_out' || node.type === 'port_in') {
+      continue
+    }
+
+    runtime.lastStatus = running()
+  }
+
+  // Phase 2: edge transfer
+  const edgeFlows = transferAlongEdges(nodes, edges)
+
+  // Phase 3: block inventory port interaction
+  for (const node of nodes) {
+    if (!node.enabled) {
+      continue
+    }
+
+    const runtime = ensureRuntime(node)
     if (node.type === 'port_out') {
       runPortOut({
         node,
@@ -72,13 +95,8 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
         runtime,
         block: nextBlock,
       })
-      continue
     }
-
-    runtime.lastStatus = running()
   }
-
-  const edgeFlows = transferAlongEdges(nodes, edges)
 
   return {
     block: nextBlock,
@@ -106,11 +124,12 @@ interface ExtractorContext {
   block: BlockState
   powerProduced: number
   powerUsed: number
+  extractionBudget: ResourceInventory
   effectiveRateMultiplier: number
 }
 
 function runExtractor(ctx: ExtractorContext): number {
-  const { node, runtime, block, powerProduced, effectiveRateMultiplier } = ctx
+  const { node, runtime, block, powerProduced, extractionBudget, effectiveRateMultiplier } = ctx
   let { powerUsed } = ctx
 
   const resourceId = readString(node.params.resourceId, '')
@@ -133,10 +152,21 @@ function runExtractor(ctx: ExtractorContext): number {
     return powerUsed
   }
 
+  const remainingRateBudget = positive(extractionBudget[resourceId] ?? 0)
+  if (remainingRateBudget <= EPSILON) {
+    runtime.lastStatus = stalled('no_input')
+    return powerUsed
+  }
+
   const outputPort = readString(node.params.outputPort, DEFAULT_OUTPUT_PORT)
   const output = getPortInventory(runtime.outputBuf, outputPort)
   const maxOutputBuffer = optionalPositiveNumber(node.params.maxOutputBuffer)
-  const nextAmount = Math.min(available, ratePerTick)
+  const nextAmount = Math.min(available, ratePerTick, remainingRateBudget)
+
+  if (nextAmount <= EPSILON) {
+    runtime.lastStatus = stalled('no_input')
+    return powerUsed
+  }
 
   if (
     maxOutputBuffer !== undefined &&
@@ -147,6 +177,7 @@ function runExtractor(ctx: ExtractorContext): number {
   }
 
   addQty(output, resourceId, nextAmount)
+  extractionBudget[resourceId] = clampPositive(remainingRateBudget - nextAmount)
   block.deposits[resourceId] = clampPositive(available - nextAmount)
   powerUsed += powerPerTick
   runtime.lastStatus = running()
@@ -363,6 +394,17 @@ function transferInventory(
   }
 
   return moved
+}
+
+function createExtractionBudget(
+  rates: Record<string, number>,
+  effectiveRateMultiplier: number
+): ResourceInventory {
+  const budget: ResourceInventory = {}
+  for (const [resourceId, rate] of Object.entries(rates)) {
+    budget[resourceId] = positive(rate) * effectiveRateMultiplier
+  }
+  return budget
 }
 
 function hasStacks(inventory: ResourceInventory, stacks: Stack[]): boolean {

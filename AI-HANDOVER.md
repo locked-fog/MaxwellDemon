@@ -4,112 +4,157 @@ note: Use Chinese to communicate with USER
 
 ## 1. Purpose
 
-This document is the execution handover package for the next AI Agent.
-Use this together with:
+本文件是本轮开发交接包，供下一位 AI Agent 无缝接手。
+请结合以下文档一起使用：
 
-- `Vibe-README.md` (product and architecture baseline)
-- `v0.1-scope.md` (release acceptance baseline)
+- `Vibe-README.md`（产品与架构基线）
+- `v0.1-scope.md`（v0.1 最终验收基线，冲突时优先）
 
-Goal: allow a new Agent to continue development with minimal context rebuild.
+---
 
-## 2. Current Project Snapshot
+## 2. Current Snapshot
 
 - Repo root: `g:\Projects\MaxwellDemon\vibe`
-- Active milestone branch: `dev/m3-graph-editor-review`
-- Latest commit: `7e773f1` (`feat: complete M3 graph editor usable milestone`)
-- Milestone state:
-- M2: Completed
-- M3: Completed (based on the updated route in `Vibe-README.md`)
-- M4+: Not started
+- Active branch: `dev/m4-sim-ui-loop`
+- Milestone status:
+  - M2: done
+  - M3: done
+  - M4: done（本轮完成）
+  - M5+: pending
 
-## 3. Milestone Progress Board
+备注：当前分支包含完整 M4 交付和一批 M4.1 体验增强，不是“只改一处”的最小变更分支。
 
-- M2 World map/state MVP: done
-- M3 Graph editor usable: done
-- M4 Sim-UI loop: pending
-- M5 Cross-block logistics: pending
-- M6 Save system: pending
-- M7 Tech/policy effective modifiers: pending
-- M8 Trade/trader/quest/contract: pending
-- M9 Story T0-T4 + rebirth: pending
-- M10 Content scale + release gate: pending
+---
 
-## 4. What Is Already Implemented
+## 3. What Was Completed In This Batch
 
-- World state/session reducer and map generation:
+### 3.1 M4 Core Deliverables
+
+1. World tick 接入 reducer（`tick_world`）并驱动 sim：
+   - `ts/src/app/state/worldLogic.ts`
+   - `ts/src/app/state/worldState.tsx`
+2. 运行控制接入 UI（Play/Pause/Step/Speed）：
+   - `ts/src/app/App.tsx`
+   - `ts/src/app/app.css`
+3. Graph UI 每 tick 显示节点运行态与边流量/容量：
+   - `ts/src/features/graph/GraphEditorPage.tsx`
+   - `ts/src/features/graph/graph.css`
+4. reducer tick 集成测试与确定性测试：
+   - `ts/src/app/state/worldLogic.test.ts`
+
+### 3.2 Post-M4 Enhancements (USER Requested)
+
+1. 区块“产率 vs 储量”分离：
+   - 新增 `extractionRatePerTick`（区块每 tick 产率上限）
+   - `deposits` 作为可开采总储量（百万级量纲）
+   - 文件：
+     - `ts/src/types/world.ts`
+     - `ts/src/app/state/worldLogic.ts`
+     - `ts/src/features/sim/core.ts`
+     - `ts/src/features/sim/core.test.ts`
+2. 地图双击区块直接跳转 Graph Editor：
+   - `ts/src/features/map/MapPage.tsx`
+   - `ts/src/app/App.tsx`
+3. Graph 页面增加当前区块信息面板（坐标、地形、产率总和、储量总和）：
+   - `ts/src/features/graph/GraphEditorPage.tsx`
+4. Tick 节奏改为 `1t/s` 默认，并引入“后期资源解锁加速”：
+   - `2x/4x/8x` 需库存资源达标后可选
+   - `ts/src/app/App.tsx`
+5. 管道流动特效增强（活跃边流动虚线+发光、负载百分比标签）：
+   - `ts/src/features/graph/GraphEditorPage.tsx`
+   - `ts/src/features/graph/graph.css`
+6. 紧凑存档契约补充（为后续真正落地 compact save 做准备）：
+   - `ts/src/features/save/index.ts`
+
+### 3.3 Scope Alignment Fix (Important)
+
+修复了此前提到的 sim tick 顺序偏差：
+
+- 现在顺序为：
+  - 节点处理（不含端口）
+  - 连线传输
+  - 端口库存交互（`port_out`/`port_in`）
+- 文件：
+  - `ts/src/features/sim/core.ts`
+  - `ts/src/features/sim/core.test.ts`（新增顺序回归测试）
+
+注意：跨区块抽取仍未实现（属于 M5，不在 M4 交付内）。
+
+---
+
+## 4. Verification Results
+
+在 `ts/` 目录执行：
+
+- `npm run lint` ✅
+- `npm run test` ✅
+- `npm run build` ✅
+
+当前测试通过数：`27`。
+
+---
+
+## 5. Files Changed In This Batch
+
+- `ts/src/app/App.tsx`
+- `ts/src/app/app.css`
 - `ts/src/app/state/worldLogic.ts`
 - `ts/src/app/state/worldState.tsx`
-- Map view, zoom/pan, block selection/unlock:
+- `ts/src/app/state/worldLogic.test.ts`
 - `ts/src/features/map/MapPage.tsx`
-- Graph editor foundation (React Flow):
+- `ts/src/features/block/BlockPanelPage.tsx`
 - `ts/src/features/graph/GraphEditorPage.tsx`
-- Graph local editor reducer:
-- `ts/src/features/graph/state.ts`
-- Graph connection rule validation:
-- `ts/src/features/graph/rules.ts`
-- Sim core (pure function, tested):
+- `ts/src/features/graph/graph.css`
 - `ts/src/features/sim/core.ts`
-
-## 5. M3 Acceptance Mapping (Updated Route)
-
-Target definition from `Vibe-README.md`:
-"M3 Graph editor usable, node CRUD, edges, param editing, graph state in memory store, can manually build one valid production line."
-
-Current status:
-
-- Node add/delete/move/select: done
-- Edge connect/delete with rule validation: done
-- Parameter panel edit (node/edge): done
-- Graph persisted into in-memory world store: done
-- Manual valid line setup in UI: supported
-
-## 6. Known Gaps For Next Milestone (M4 Entry Conditions)
-
-- Sim is not yet wired into UI tick loop.
-- Node runtime status and edge flow are displayed in UI model, but not yet driven by a running world tick controller.
-- Save system remains scaffold-only:
+- `ts/src/features/sim/core.test.ts`
 - `ts/src/features/save/index.ts`
+- `ts/src/types/world.ts`
 
-## 7. Immediate Next Work (M4 Plan)
+---
 
-1. Add world tick action in reducer (`tick_world` or equivalent) and run `stepBlock` on unlocked/selected scope.
-2. Add runtime controls in UI: Play/Pause/Step + tick speed.
-3. Feed `NodeRuntime.lastStatus` and `EdgeInstance.lastFlowPerTick` back to Graph UI every tick.
-4. Add tests for reducer tick integration and deterministic update order.
-5. Keep `npm run lint`, `npm run test`, `npm run build` green.
+## 6. Remaining Work (Priority For Next Agent)
 
-## 8. Test and Validation Baseline
+### 6.1 M5 (Highest Priority)
 
-Run in `ts/`:
+实现跨区块物流（邻格抽取 + 出口容量 + 固定顺序可复现）：
 
-- `npm run lint`
-- `npm run test`
-- `npm run build`
+- 建议入口：
+  - `ts/src/app/state/worldLogic.ts`（world tick 主循环）
+  - `ts/src/types/world.ts`（必要的物流状态字段）
+  - `ts/src/features/sim/*`（区块内与跨区块逻辑边界）
+- 必须补测试：
+  - 同初始存档、同输入序列下结果确定性
+  - 顺时针优先分配规则
+  - 出口容量限制生效
 
-Current baseline: all pass on latest M3 commit.
+### 6.2 M6
 
-## 9. Key Data and Contracts
+把 save 从“契约与骨架”推进到可用：
 
-- Node type schema: `ts/src/data/nodeTypes.json`
-- Recipes: `ts/src/data/recipes.json`
-- Resources: `ts/src/data/resources.json`
-- Graph/domain types: `ts/src/types/graph.ts`
-- World types: `ts/src/types/world.ts`
+- IndexedDB 持久化
+- JSON 导入导出
+- `saveVersion` 迁移入口
+- 使用 `mapSeed + mapCellCount` 重建静态地图，减少存档体积
 
-## 10. Handover Checklist (Use Before Every Agent Switch)
+### 6.3 M7+
 
-- Record current branch and latest commit hash.
-- Record milestone and acceptance criterion being targeted.
-- Record completed items and explicitly list pending items.
-- Record exact files changed in current batch.
-- Record verification commands and outcomes.
-- Record known blockers/risks and reproduction steps.
+- 科技/政策从展示变为真实 modifier 生效（尤其影响区块产率与 sim 指标）
+- 交易/商人/任务/合同闭环
+- 剧情 T0-T4 与转生
 
-## 11. Suggested Commit/PR Granularity
+---
 
-- One milestone sub-goal per branch (example: `dev/m4-sim-ui-loop`).
-- Keep commits scoped by feature unit:
-- reducer change
-- UI change
-- tests
-- Do not mix unrelated refactors with milestone delivery.
+## 7. Risks / Notes
+
+1. 当前 `deposits` 已切到百万级，会影响平衡；后续需统一经济单位口径（UI 显示、任务需求、交易定价）。
+2. 速度解锁目前以“全区块库存汇总”判定，是实现层策略，不是最终设计定稿；可在 M8 与交易系统联动后调整。
+3. `AI-HANDOVER.md` 已与 M4 前状态彻底不同，后续切换 Agent 前请继续维护本文件，避免信息回退。
+
+---
+
+## 8. Suggested Next Branch
+
+- 建议从当前分支继续切：
+  - `dev/m5-cross-block-logistics`
+
+并保持一项里程碑能力一个分支，减少回归范围。

@@ -17,7 +17,11 @@ const TERRAIN_COLORS: Record<TerrainId, string> = {
   coast: '#c7ae77',
 }
 
-export function MapPage() {
+interface MapPageProps {
+  onOpenBlockGraph?: (blockId: string) => void
+}
+
+export function MapPage({ onOpenBlockGraph }: MapPageProps) {
   const { world, selectedBlockId, selectedBlock, selectBlock, unlockBlock, canUnlock } = useWorldSession()
   const [zoom, setZoom] = useState(1)
   const [isDragging, setIsDragging] = useState(false)
@@ -102,6 +106,15 @@ export function MapPage() {
     selectBlock(blockId)
   }
 
+  function onTileDoubleClick(blockId: string): void {
+    if (suppressTileClickRef.current) {
+      suppressTileClickRef.current = false
+      return
+    }
+    selectBlock(blockId)
+    onOpenBlockGraph?.(blockId)
+  }
+
   return (
     <PageCard title="Map" subtitle="Hex world, block selection, and unlock flow">
       <div className="map-layout">
@@ -152,6 +165,7 @@ export function MapPage() {
                   fill={tile.fill}
                   className="map-fill"
                   onClick={() => onTileClick(tile.block.id)}
+                  onDoubleClick={() => onTileDoubleClick(tile.block.id)}
                 />
               ))}
 
@@ -206,6 +220,11 @@ export function MapPage() {
               </p>
               <p className="map-meta">Terrain: {selectedBlock.terrain}</p>
               <p className="map-meta">Unlocked: {selectedBlock.unlocked ? 'yes' : 'no'}</p>
+              <p className="map-meta">
+                Yield (sum/tick): {formatMetric(sumValues(selectedBlock.extractionRatePerTick))}
+              </p>
+              <p className="map-meta">Reserve (sum): {formatLarge(sumValues(selectedBlock.deposits))}</p>
+              <p className="map-hint">Tip: double-click a tile to jump to Graph Editor.</p>
 
               {!selectedBlock.unlocked && canUnlock(selectedBlock.id) ? (
                 <button
@@ -228,6 +247,36 @@ export function MapPage() {
       </div>
     </PageCard>
   )
+}
+
+function sumValues(values: Record<string, number>): number {
+  let total = 0
+  for (const qty of Object.values(values)) {
+    if (Number.isFinite(qty)) {
+      total += qty
+    }
+  }
+  return total
+}
+
+function formatMetric(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
+  const rounded = Math.round(safe * 100) / 100
+  if (Math.abs(rounded - Math.round(rounded)) < 1e-9) {
+    return `${Math.round(rounded)}`
+  }
+  return rounded.toFixed(2)
+}
+
+function formatLarge(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
+  if (safe >= 1_000_000) {
+    return `${(safe / 1_000_000).toFixed(2)}M`
+  }
+  if (safe >= 1_000) {
+    return `${(safe / 1_000).toFixed(1)}K`
+  }
+  return formatMetric(safe)
 }
 
 interface MapTileView {
