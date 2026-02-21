@@ -100,6 +100,47 @@
   color: #8fa8c2;
 }
 
+.save-io-panel {
+  margin-top: 10px;
+  border: 1px solid #304861;
+  border-radius: 10px;
+  background: #0f1b2b;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.save-io-label {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #d2e1ef;
+  font-weight: 600;
+}
+
+.save-io-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.save-io-textarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #35506b;
+  border-radius: 8px;
+  background: #0b1320;
+  color: #e9f2ff;
+  padding: 10px;
+  box-sizing: border-box;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.setup-import-panel {
+  margin-top: 12px;
+}
+
 .app-nav {
   display: flex;
   flex-wrap: wrap;

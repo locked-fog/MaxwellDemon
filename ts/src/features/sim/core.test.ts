@@ -175,7 +175,6 @@ function createBaselineBlock(): BlockState {
     capacitySlots: 10,
     outletCapacityPerTick: 20,
     extractionRatePerTick: { ore: 2 },
-    deposits: { ore: 20 },
     inventory: {},
     graph: {
       nodes: [
@@ -257,7 +256,6 @@ function createPortOrderBlock(): BlockState {
     capacitySlots: 10,
     outletCapacityPerTick: 20,
     extractionRatePerTick: {},
-    deposits: {},
     inventory: { ore: 5 },
     graph: {
       nodes: [
@@ -309,7 +307,6 @@ function createPortDemandBlock(): BlockState {
     capacitySlots: 10,
     outletCapacityPerTick: 20,
     extractionRatePerTick: {},
-    deposits: {},
     inventory: { ore: 1, wood: 2 },
     graph: {
       nodes: [
@@ -352,7 +349,6 @@ function createBufferLimitedPortDemandBlock(): BlockState {
     capacitySlots: 10,
     outletCapacityPerTick: 20,
     extractionRatePerTick: {},
-    deposits: {},
     inventory: { ore: 10 },
     graph: {
       nodes: [

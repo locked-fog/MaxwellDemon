@@ -41,7 +41,6 @@ export function stepBlock(block: BlockState, config: SimTickConfig): SimTickResu
       powerUsed = runExtractor({
         node,
         runtime,
-        block: nextBlock,
         powerProduced,
         powerUsed,
         extractionBudget,
@@ -126,7 +125,6 @@ function collectPower(nodes: NodeInstance[]): number {
 interface ExtractorContext {
   node: NodeInstance
   runtime: NodeRuntime
-  block: BlockState
   powerProduced: number
   powerUsed: number
   extractionBudget: ResourceInventory
@@ -134,7 +132,7 @@ interface ExtractorContext {
 }
 
 function runExtractor(ctx: ExtractorContext): number {
-  const { node, runtime, block, powerProduced, extractionBudget, effectiveRateMultiplier } = ctx
+  const { node, runtime, powerProduced, extractionBudget, effectiveRateMultiplier } = ctx
   let { powerUsed } = ctx
 
   const resourceId = readString(node.params.resourceId, '')
@@ -151,12 +149,6 @@ function runExtractor(ctx: ExtractorContext): number {
     return powerUsed
   }
 
-  const available = positive(block.deposits[resourceId] ?? 0)
-  if (available <= EPSILON) {
-    runtime.lastStatus = stalled('no_input')
-    return powerUsed
-  }
-
   const remainingRateBudget = positive(extractionBudget[resourceId] ?? 0)
   if (remainingRateBudget <= EPSILON) {
     runtime.lastStatus = stalled('no_input')
@@ -166,7 +158,7 @@ function runExtractor(ctx: ExtractorContext): number {
   const outputPort = readString(node.params.outputPort, DEFAULT_OUTPUT_PORT)
   const output = getPortInventory(runtime.outputBuf, outputPort)
   const maxOutputBuffer = optionalPositiveNumber(node.params.maxOutputBuffer)
-  const nextAmount = Math.min(available, ratePerTick, remainingRateBudget)
+  const nextAmount = Math.min(ratePerTick, remainingRateBudget)
 
   if (nextAmount <= EPSILON) {
     runtime.lastStatus = stalled('no_input')
@@ -183,7 +175,6 @@ function runExtractor(ctx: ExtractorContext): number {
 
   addQty(output, resourceId, nextAmount)
   extractionBudget[resourceId] = clampPositive(remainingRateBudget - nextAmount)
-  block.deposits[resourceId] = clampPositive(available - nextAmount)
   powerUsed += powerPerTick
   runtime.lastStatus = running()
   return powerUsed

@@ -223,7 +223,6 @@ export function MapPage({ onOpenBlockGraph }: MapPageProps) {
               <p className="map-meta">
                 Yield (sum/tick): {formatMetric(sumValues(selectedBlock.extractionRatePerTick))}
               </p>
-              <p className="map-meta">Reserve (sum): {formatLarge(sumValues(selectedBlock.deposits))}</p>
               <p className="map-hint">Tip: double-click a tile to jump to Graph Editor.</p>
 
               {!selectedBlock.unlocked && canUnlock(selectedBlock.id) ? (
@@ -266,17 +265,6 @@ function formatMetric(value: number): string {
     return `${Math.round(rounded)}`
   }
   return rounded.toFixed(2)
-}
-
-function formatLarge(value: number): string {
-  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
-  if (safe >= 1_000_000) {
-    return `${(safe / 1_000_000).toFixed(2)}M`
-  }
-  if (safe >= 1_000) {
-    return `${(safe / 1_000).toFixed(1)}K`
-  }
-  return formatMetric(safe)
 }
 
 interface MapTileView {

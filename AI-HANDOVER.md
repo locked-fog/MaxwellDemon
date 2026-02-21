@@ -1,10 +1,10 @@
-﻿# Maxwell Demon AI Handover
+# Maxwell Demon AI Handover
 
 note: Use Chinese to communicate with USER
 
 ## 1. Purpose
 
-本文件是当前最新交接包。M5 已完成并合并到 `main`，下一位 Agent 应直接进入 M6（存档系统）开发，不再重复大范围环境确认。
+本文件是当前最新交接包。M6（存档系统）已完成，下一位 Agent 应直接进入 M7（科技树与政策树），不再重复大范围环境确认。
 
 配套文档：
 - `Vibe-README.md`（产品与架构基线）
@@ -16,56 +16,80 @@ note: Use Chinese to communicate with USER
 
 - Repo root: `g:\Projects\MaxwellDemon\vibe`
 - Branch state:
-  - `main` == `origin/main` == `78650ef`
-  - `dev/m5-cross-block-logistics` 已 rebase 到 `main`，当前也在 `78650ef`
-- Workspace: clean（`git status` 空）
+  - `main` == `origin/main` == `eb200db`
+  - 工作分支：`dev/m6-save-system`（包含 M6 完成改动，待/已用于 PR）
 - Milestone status:
   - M2: done
   - M3: done
   - M4: done
   - M5: done and merged
-  - M6+: pending
+  - M6: done
+  - M7+: pending
 
 ---
 
-## 3. What Was Delivered (M5 Final)
+## 3. What Was Delivered (M6 Final)
 
-### 3.1 业务规则落地
+### 3.1 存档系统能力
 
-已实现 M5 跨区块物流：
-1. 邻格抽取（仅邻接区块）
-2. 顺时针优先（固定顺序，确定性）
-3. 供给方 `outletCapacityPerTick` 限流（每 tick 共享出口预算）
-4. 可复现确定性（固定排序 + 无随机分配）
+已实现浏览器内存档（静态部署友好）：
+1. `IndexedDB` 持久化（读档/写档）
+2. 启动时自动检测本地存档并恢复（有档自动进游戏）
+3. 自动存档按“每个游戏日（day）”触发
+4. 手动存档按钮 `Save Now`
+5. Play/Pause 每次点击均触发一次保存
 
-### 3.2 关键重构（需求口径）
+### 3.2 导入/导出与格式
 
-跨区块需求不再使用“库存估算（rate - inventory）”，而是改为“Sim 实际缺口”：
-- `stepBlock` 返回 `unmetDemand`
-- `worldLogic.tickWorldOnce` 收集各区块 `unmetDemand`
-- `applyCrossBlockLogistics` 直接消费该 `unmetDemand`
+已采用“版本化 base64 存档串”方案，不再使用 JSON 导入/导出：
+1. 导出格式：`MD_SAVE_B64_V1.<base64-envelope>`
+2. envelope 含 `kind/saveVersion/payload`，加载时做版本校验
+3. 导出支持两种方式：
+   - Copy to Clipboard
+   - Export to File
+4. 导入不再使用浏览器 `prompt`，改为页面内输入框（初始页与运行时均支持）
 
-### 3.3 主要改动文件
+### 3.3 迁移与错误处理
 
+1. 已接入 `saveVersion` 迁移链（含 `v0 -> v1` 可执行骨架）
+2. 非法/损坏存档会抛出明确错误（`SaveFormatError`），不静默失败
+
+### 3.4 资源模型调整（与用户最新需求对齐）
+
+1. 取消区块有限储量（移除 `deposits`）
+2. 资源抽取仅受 `ratePerTick` 与 `extractionRatePerTick` 限制
+3. 已同步清理存档结构与相关 UI 展示中的 `deposits` 口径
+
+### 3.5 主要改动文件
+
+- `ts/src/features/save/index.ts`
+- `ts/src/features/save/index.test.ts`
+- `ts/src/app/state/worldState.tsx`
 - `ts/src/app/state/worldLogic.ts`
-- `ts/src/app/state/worldLogic.test.ts`
+- `ts/src/app/App.tsx`
+- `ts/src/app/app.css`
+- `ts/src/types/world.ts`
 - `ts/src/features/sim/core.ts`
 - `ts/src/features/sim/core.test.ts`
-- `ts/src/features/sim/types.ts`
+- `ts/src/app/state/worldLogic.test.ts`
+- `ts/src/features/map/MapPage.tsx`
+- `ts/src/features/graph/GraphEditorPage.tsx`
+- `ts/src/features/block/BlockPanelPage.tsx`
+- `Vibe-README.md`
+- `v0.1-scope.md`
 
-### 3.4 测试与校验
+### 3.6 测试与校验
 
 在 `ts/` 执行并通过：
-- `npm run test`（33 passed）
+- `npm run test`（36 passed）
 - `npm run lint`
 - `npm run build`
 
-新增覆盖点：
-1. 跨区块确定性（同初始状态 + 同输入序列）
-2. 顺时针优先分配
-3. `outletCapacityPerTick` 限流生效
-4. 多资源争抢同一出口预算（总抽取不超过预算）
-5. Sim `unmetDemand` 计算与缓冲受限场景
+新增/覆盖点：
+1. 导出 -> 导入后世界状态一致
+2. 旧版本存档迁移（`v0 -> v1`）可执行且不崩溃
+3. 非法存档输入有明确错误
+4. 取消 `deposits` 后 sim/world 测试口径已同步
 
 ---
 
@@ -81,24 +105,22 @@ note: Use Chinese to communicate with USER
    - 资源按 `resourceId` 排序
    - 邻接按固定顺时针偏移顺序
 5. `features/sim` 必须保持纯逻辑，不依赖 UI。
+6. 存档格式已切换为版本化 base64；不要回退为 JSON 导入/导出。
+7. 区块不再有有限储量字段 `deposits`；不要在新逻辑里重新引入该约束。
 
 ---
 
-## 5. Next Priority (M6 Save System)
+## 5. Next Priority (M7 Progress System)
 
-按 `Vibe-README.md` 的 M6 开发：
-- 目标：IndexedDB 持久化 + JSON 导入/导出 + `saveVersion` 迁移链
-- 完成标准：刷新恢复、导出可导入、迁移不崩溃
+按 `Vibe-README.md` / `v0.1-scope.md` 的 M7 开发：
+- 目标：科技树与政策树的数据读入、前置校验、解锁与 modifier 生效
+- 完成标准：科技/政策真实影响 sim（非仅展示）
 
 建议入口：
-- `ts/src/features/save/index.ts`
-- `ts/src/types/*`（如需扩展存档类型）
-- `ts/src/app/state/*`（仅处理接入，不把存档逻辑散落到 UI）
-
-M6 最低测试要求（建议先补）：
-1. 导出 -> 导入后世界状态一致
-2. 旧版本存档能触发迁移并成功加载
-3. 非法/损坏存档有明确错误而非静默失败
+- `ts/src/features/progress/*`
+- `ts/src/data/techs.json`
+- `ts/src/data/policies.json`
+- `ts/src/app/state/*`（仅最小接入）
 
 ---
 
@@ -108,7 +130,7 @@ M6 最低测试要求（建议先补）：
 1. `git fetch origin`
 2. `git switch main`
 3. `git merge --ff-only origin/main`
-4. 从 `main` 新切里程碑分支（例如 `dev/m6-save-system`）
+4. 从 `main` 新切里程碑分支（例如 `dev/m7-progress-system`）
 
 不要在已合并的里程碑分支上继续叠加下一里程碑开发。
 
@@ -121,13 +143,13 @@ M6 最低测试要求（建议先补）：
 1. `git fetch origin`
 2. `git switch main`
 3. `git merge --ff-only origin/main`
-4. `git switch -c dev/m6-save-system`
+4. `git switch -c dev/m7-progress-system`
 5. `cd ts`
 6. `npm run test`
 7. `npm run lint`
 8. `npm run build`
 
-然后直接开始 M6 实现。
+然后直接开始 M7 实现。
 
 ---
 

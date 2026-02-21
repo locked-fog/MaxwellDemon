@@ -53,7 +53,7 @@
 - 工作流编辑器：React Flow（节点/连线）
 - 六边形地图：自绘 SVG/Canvas（第一版），或引入 hex-grid 库（可选）
 - 状态管理：Zustand（或 React Context + reducer，选简单顺手的）
-- 存档：IndexedDB（Dexie 或 idb-keyval），并提供“导出/导入 JSON”
+- 存档：IndexedDB（浏览器内持久化），并提供“版本化 base64 导出/导入”（支持复制到剪贴板或导出文件）
 
 测试（强烈建议至少覆盖 sim core）：
 
@@ -135,7 +135,8 @@ export interface BlockState {
   terrain: TerrainId;
 
   capacitySlots: number; // 节点槽位上限（硬约束）
-  deposits: Record<ResourceId, number>; // 资源禀赋等级/储量（简化）
+  outletCapacityPerTick: number; // 跨区块出口容量
+  extractionRatePerTick: Record<ResourceId, number>; // 区块资源产率上限（不设有限储量）
 
   unlocked: boolean;
 
@@ -359,12 +360,12 @@ export interface StoryEventDef {
 
 ---
 
-## 9. 存档格式（强约束：可导出 JSON）
+## 9. 存档格式（强约束：可导出版本化 base64）
 
 存档内容必须包含：
 
 - 世界时间（day、tick）
-- 地图所有区块状态（unlocked、terrain、deposits、capacity、inventory、graph）
+- 地图所有区块状态（unlocked、terrain、capacity、extractionRate、inventory、graph）
 - 科技解锁状态、政策选择状态
 - 交易：信誉、任务刷新时间戳、合同状态
 - 剧情事件触发记录
@@ -373,6 +374,7 @@ export interface StoryEventDef {
 强烈建议：
 
 - 存档版本号 `saveVersion`
+- 导出格式使用“版本化 envelope + base64 编码”（含版本校验）
 - 每次加载做迁移（哪怕先只有 v1→v2 的空实现）
 
 ---
@@ -402,7 +404,7 @@ export interface StoryEventDef {
 6. 加政策树（数据读入 + modifier 生效）
 7. 加商人系统（买卖 + 任务刷新 + 奖励）
 8. 加剧情与转生（事件触发 + 结算 + 重置）
-9. 加存档（IndexedDB + 导出导入）
+9. 加存档（IndexedDB + 版本化 base64 导入导出）
 
 ### 10.3 “完成定义”（DoD）
 
@@ -472,7 +474,7 @@ M5：跨区块物流
 目标：实现邻格抽取与出口容量限制。
 完成标准：区块间资源可按规则流动且可复现。
 M6：存档系统
-目标：IndexedDB 持久化 + JSON 导入导出 + saveVersion 迁移。
+目标：IndexedDB 持久化 + 版本化 base64 导入导出 + saveVersion 迁移。
 完成标准：刷新后恢复、导出可导入、迁移不崩溃。
 M7：科技树与政策树
 目标：数据读入、前置校验、解锁与 modifier 生效。

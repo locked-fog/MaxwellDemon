@@ -590,7 +590,6 @@ export function GraphEditorPage() {
             <p>Slots: {selectedBlock.capacitySlots}</p>
             <p>Outlet cap/tick: {formatMetric(selectedBlock.outletCapacityPerTick)}</p>
             <p>Yield sum/tick: {formatMetric(sumValues(selectedBlock.extractionRatePerTick))}</p>
-            <p>Reserve sum: {formatLarge(sumValues(selectedBlock.deposits))}</p>
           </div>
 
           <h3>Selection</h3>
@@ -937,17 +936,6 @@ function sumValues(values: Record<string, number>): number {
     }
   }
   return total
-}
-
-function formatLarge(value: number): string {
-  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
-  if (safe >= 1_000_000) {
-    return `${(safe / 1_000_000).toFixed(2)}M`
-  }
-  if (safe >= 1_000) {
-    return `${(safe / 1_000).toFixed(1)}K`
-  }
-  return formatMetric(safe)
 }
 
 function resolveMiniMapNodeColor(node: Node): string {
